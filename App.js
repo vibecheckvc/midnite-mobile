@@ -10,47 +10,42 @@ import LoadingScreen from "./src/screens/LoadingScreen";
 import AuthScreen from "./src/screens/AuthScreen";
 import MainTabs from "./src/navigation/MainTabs";
 
+// Import auth context
+import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
+
 const Stack = createStackNavigator();
 
-export default function App() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function AppNavigator() {
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
-
-  if (isLoading) {
+  if (loading) {
     return <LoadingScreen />;
   }
 
   return (
+    <NavigationContainer>
+      <StatusBar style="light" backgroundColor="#1a1a2e" />
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        {user ? (
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+        ) : (
+          <Stack.Screen name="Auth" component={AuthScreen} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
     <GestureHandlerRootView style={styles.container}>
-      <NavigationContainer>
-        <StatusBar style="light" backgroundColor="#1a1a2e" />
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          {!isAuthenticated ? (
-            <Stack.Screen name="Auth">
-              {() => <AuthScreen onLogin={handleLogin} />}
-            </Stack.Screen>
-          ) : (
-            <Stack.Screen name="MainTabs" component={MainTabs} />
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+      <AuthProvider>
+        <AppNavigator />
+      </AuthProvider>
     </GestureHandlerRootView>
   );
 }

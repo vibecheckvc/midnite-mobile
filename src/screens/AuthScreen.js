@@ -11,20 +11,24 @@ import {
   Platform,
   ScrollView,
   Image,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../constants/colors";
+import { useAuth } from "../contexts/AuthContext";
 
 const { width, height } = Dimensions.get("window");
 
-export default function AuthScreen({ onLogin }) {
+export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
+  const { signIn, signUp, resetPassword } = useAuth();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -43,13 +47,75 @@ export default function AuthScreen({ onLogin }) {
     ]).start();
   }, []);
 
-  const handleAuth = () => {
-    // Dummy authentication - just call onLogin
-    onLogin();
+  const handleAuth = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all required fields");
+      return;
+    }
+
+    if (!isLogin && password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    if (!isLogin && !username) {
+      Alert.alert("Error", "Please enter a username");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          Alert.alert("Sign In Error", error.message);
+        }
+      } else {
+        const { error } = await signUp(email, password, username);
+        if (error) {
+          Alert.alert("Sign Up Error", error.message);
+        } else {
+          Alert.alert(
+            "Success",
+            "Account created successfully! Please check your email to verify your account."
+          );
+        }
+      }
+    } catch (error) {
+      Alert.alert("Error", "An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Error", "Please enter your email address first");
+      return;
+    }
+
+    try {
+      const { error } = await resetPassword(email);
+      if (error) {
+        Alert.alert("Error", error.message);
+      } else {
+        Alert.alert(
+          "Password Reset",
+          "Check your email for password reset instructions"
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "An unexpected error occurred");
+    }
   };
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setUsername("");
   };
 
   const slideTransform = slideAnim.interpolate({
@@ -166,16 +232,34 @@ export default function AuthScreen({ onLogin }) {
                 </View>
               )}
 
-              <TouchableOpacity style={styles.authButton} onPress={handleAuth}>
+              <TouchableOpacity
+                style={[
+                  styles.authButton,
+                  isLoading && styles.authButtonDisabled,
+                ]}
+                onPress={handleAuth}
+                disabled={isLoading}
+              >
                 <LinearGradient
                   colors={colors.redGradient}
                   style={styles.gradientButton}
                 >
                   <Text style={styles.authButtonText}>
-                    {isLogin ? "Log In" : "Sign Up"}
+                    {isLoading ? "Loading..." : isLogin ? "Log In" : "Sign Up"}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
+
+              {isLogin && (
+                <TouchableOpacity
+                  style={styles.forgotPasswordButton}
+                  onPress={handleForgotPassword}
+                >
+                  <Text style={styles.forgotPasswordText}>
+                    Forgot Password?
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={styles.toggleButton}
@@ -283,6 +367,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 16,
   },
+  authButtonDisabled: {
+    opacity: 0.6,
+  },
   gradientButton: {
     paddingVertical: 16,
     borderRadius: 12,
@@ -300,6 +387,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: colors.textPrimary,
+  },
+  forgotPasswordButton: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: colors.cyan,
+    textDecorationLine: "underline",
   },
   toggleButton: {
     alignItems: "center",

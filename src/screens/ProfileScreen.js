@@ -7,28 +7,17 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  Alert,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { colors as appColors } from "../constants/colors";
+import { useAuth } from "../contexts/AuthContext";
 
 const { width } = Dimensions.get("window");
 
-// Mock user data
-const mockUser = {
-  name: "Alex Chen",
-  username: "SpeedDemon_99",
-  avatar: "🏎️",
-  location: "Tokyo, Japan",
-  bio: "Car enthusiast, drift lover, and midnight racer. Building the perfect RX-7 and sharing the journey with fellow gearheads!",
-  followers: 1247,
-  following: 892,
-  cars: 3,
-  posts: 156,
-  joinDate: "January 2023",
-  verified: true,
-};
-
+// Mock stats data
 const mockStats = [
   { label: "Posts", value: "156" },
   { label: "Followers", value: "1.2K" },
@@ -36,23 +25,16 @@ const mockStats = [
   { label: "Cars", value: "3" },
 ];
 
-const mockAchievements = [
-  {
-    title: "Speed Demon",
-    description: "First track day completed",
-    icon: "🏁",
-  },
-  {
-    title: "Social Butterfly",
-    description: "100+ followers reached",
-    icon: "👥",
-  },
-  { title: "Garage Master", description: "3 cars in garage", icon: "🏎️" },
-];
-
 export default function ProfileScreen() {
-  const [user] = useState(mockUser);
+  const { signOut, user: authUser } = useAuth();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Get username from auth user metadata or email
+  const username =
+    authUser?.user_metadata?.username ||
+    authUser?.email?.split("@")[0] ||
+    "User";
+  const displayName = authUser?.user_metadata?.full_name || username;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -61,6 +43,26 @@ export default function ProfileScreen() {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  const handleSignOut = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut();
+          } catch (error) {
+            Alert.alert("Error", "Failed to sign out");
+          }
+        },
+      },
+    ]);
+  };
 
   const ProfileSection = ({ title, children, style }) => (
     <Animated.View
@@ -113,37 +115,39 @@ export default function ProfileScreen() {
               },
             ]}
           >
-            {/* Profile Picture and Basic Info */}
-            <View style={styles.profileHeader}>
-              <View style={styles.avatarContainer}>
-                <Text style={styles.avatar}>{user.avatar}</Text>
-                {user.verified && (
-                  <View style={styles.verifiedBadge}>
-                    <Ionicons
-                      name="checkmark"
-                      size={12}
-                      color={appColors.textPrimary}
-                    />
-                  </View>
-                )}
+            {/* Profile Picture */}
+            <View style={styles.profilePictureContainer}>
+              <View style={styles.profilePicture}>
+                <Image
+                  source={{
+                    uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      displayName
+                    )}&background=8b5cf6&color=fff&size=120&bold=true`,
+                  }}
+                  style={styles.profileImage}
+                  defaultSource={require("./midnte.png")}
+                />
               </View>
-              <View style={styles.userInfo}>
-                <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userHandle}>@{user.username}</Text>
-                <View style={styles.locationContainer}>
-                  <Ionicons
-                    name="location-outline"
-                    size={14}
-                    color={appColors.textMuted}
-                  />
-                  <Text style={styles.location}>{user.location}</Text>
-                </View>
-                <Text style={styles.joinDate}>Joined {user.joinDate}</Text>
-              </View>
+              <TouchableOpacity style={styles.editPhotoButton}>
+                <Ionicons
+                  name="camera"
+                  size={16}
+                  color={appColors.textPrimary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* User Info */}
+            <View style={styles.userInfoContainer}>
+              <Text style={styles.userName}>{displayName}</Text>
+              <Text style={styles.userHandle}>@{username}</Text>
             </View>
 
             {/* Bio */}
-            <Text style={styles.bio}>{user.bio}</Text>
+            <Text style={styles.bio}>
+              Car enthusiast, drift lover, and midnight racer. Building the
+              perfect ride and sharing the journey with fellow gearheads!
+            </Text>
 
             {/* Stats */}
             <View style={styles.statsContainer}>
@@ -159,25 +163,6 @@ export default function ProfileScreen() {
 
         {/* Content Sections */}
         <View style={styles.content}>
-          {/* Achievements */}
-          <ProfileSection title="Achievements">
-            <View style={styles.achievementsContainer}>
-              {mockAchievements.map((achievement, index) => (
-                <View key={index} style={styles.achievementCard}>
-                  <Text style={styles.achievementIcon}>{achievement.icon}</Text>
-                  <View style={styles.achievementInfo}>
-                    <Text style={styles.achievementTitle}>
-                      {achievement.title}
-                    </Text>
-                    <Text style={styles.achievementDescription}>
-                      {achievement.description}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </ProfileSection>
-
           {/* Quick Actions */}
           <ProfileSection title="Quick Actions">
             <View style={styles.actionsGrid}>
@@ -252,7 +237,7 @@ export default function ProfileScreen() {
           </ProfileSection>
 
           {/* Logout */}
-          <TouchableOpacity style={styles.logoutButton}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
             <Ionicons name="log-out-outline" size={20} color={appColors.red} />
             <Text style={styles.logoutText}>Sign Out</Text>
           </TouchableOpacity>
@@ -281,60 +266,58 @@ const styles = StyleSheet.create({
   headerContent: {
     alignItems: "center",
   },
-  profileHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+  profilePictureContainer: {
+    alignItems: "center",
     marginBottom: 20,
-    width: "100%",
-  },
-  avatarContainer: {
     position: "relative",
-    marginRight: 16,
   },
-  avatar: {
-    fontSize: 60,
+  profilePicture: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: "hidden",
+    borderWidth: 4,
+    borderColor: appColors.purple,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  verifiedBadge: {
+  profileImage: {
+    width: "100%",
+    height: "100%",
+  },
+  editPhotoButton: {
     position: "absolute",
     bottom: 0,
     right: 0,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: appColors.purple,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: appColors.primary,
   },
-  userInfo: {
-    flex: 1,
-    paddingTop: 8,
+  userInfoContainer: {
+    alignItems: "center",
+    marginBottom: 16,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
     color: appColors.textPrimary,
     marginBottom: 4,
   },
   userHandle: {
-    fontSize: 16,
+    fontSize: 18,
     color: appColors.purple,
-    marginBottom: 8,
-  },
-  locationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  location: {
-    fontSize: 14,
-    color: appColors.textMuted,
-    marginLeft: 4,
-  },
-  joinDate: {
-    fontSize: 12,
-    color: appColors.textMuted,
+    fontWeight: "500",
   },
   bio: {
     fontSize: 16,
@@ -342,6 +325,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "center",
     marginBottom: 24,
+    paddingHorizontal: 20,
   },
   statsContainer: {
     flexDirection: "row",
@@ -373,33 +357,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: appColors.textPrimary,
     marginBottom: 16,
-  },
-  achievementsContainer: {
-    backgroundColor: appColors.cardBackground,
-    borderRadius: 16,
-    padding: 16,
-  },
-  achievementCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  achievementIcon: {
-    fontSize: 32,
-    marginRight: 16,
-  },
-  achievementInfo: {
-    flex: 1,
-  },
-  achievementTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: appColors.textPrimary,
-    marginBottom: 4,
-  },
-  achievementDescription: {
-    fontSize: 14,
-    color: appColors.textMuted,
   },
   actionsGrid: {
     flexDirection: "row",
