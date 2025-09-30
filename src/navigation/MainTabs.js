@@ -6,7 +6,7 @@ import { colors } from "../constants/colors";
 // Import screens
 import FeedScreen from "../screens/FeedScreen";
 import EventsScreen from "../screens/EventsScreen";
-import CrewScreen from "../screens/CrewScreen";
+import CommunityScreen from "../screens/CommunityScreen";
 import GarageScreen from "../screens/GarageScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 
@@ -23,7 +23,7 @@ export default function MainTabs() {
             iconName = focused ? "home" : "home-outline";
           } else if (route.name === "Events") {
             iconName = focused ? "calendar" : "calendar-outline";
-          } else if (route.name === "Crew") {
+          } else if (route.name === "Community") {
             iconName = focused ? "people" : "people-outline";
           } else if (route.name === "Garage") {
             iconName = focused ? "car-sport" : "car-sport-outline";
@@ -76,10 +76,10 @@ export default function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="Crew"
-        component={CrewScreen}
+        name="Community"
+        component={CommunityScreen}
         options={{
-          title: "Crew",
+          title: "Community",
         }}
       />
       <Tab.Screen
