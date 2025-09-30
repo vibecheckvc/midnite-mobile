@@ -6,6 +6,7 @@ import {
   Animated,
   Dimensions,
   StatusBar,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "../constants/colors";
@@ -87,8 +88,11 @@ export default function LoadingScreen() {
               },
             ]}
           >
-            <Text style={styles.logo}>MIDNITE</Text>
-            <Text style={styles.subLogo}>AUTO</Text>
+            <Image
+              source={require("./midnte.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </Animated.View>
 
           {/* Tagline */}
@@ -149,21 +153,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  logo: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: colors.textPrimary,
-    letterSpacing: 8,
-    textShadowColor: colors.purple,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  subLogo: {
-    fontSize: 24,
-    fontWeight: "300",
-    color: colors.purple,
-    letterSpacing: 4,
-    marginTop: -5,
+  logoImage: {
+    width: 200,
+    height: 80,
   },
   tagline: {
     fontSize: 18,

@@ -211,7 +211,7 @@ export default function ProfileScreen() {
 
               <TouchableOpacity style={styles.actionCard}>
                 <LinearGradient
-                  colors={[appColors?.red || "#ef4444", "#dc2626"]}
+                  colors={appColors?.redGradient || ["#ef4444", "#dc2626"]}
                   style={styles.actionGradient}
                 >
                   <Ionicons
@@ -225,7 +225,7 @@ export default function ProfileScreen() {
 
               <TouchableOpacity style={styles.actionCard}>
                 <LinearGradient
-                  colors={[appColors?.green || "#10b981", "#059669"]}
+                  colors={["#10b981", "#059669"]}
                   style={styles.actionGradient}
                 >
                   <Ionicons

@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -77,8 +78,11 @@ export default function AuthScreen({ onLogin }) {
           >
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.logo}>MIDNITE</Text>
-              <Text style={styles.subLogo}>AUTO</Text>
+              <Image
+                source={require("./midnte.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
               <Text style={styles.tagline}>The 24/7 Car Meet</Text>
             </View>
 
@@ -164,7 +168,7 @@ export default function AuthScreen({ onLogin }) {
 
               <TouchableOpacity style={styles.authButton} onPress={handleAuth}>
                 <LinearGradient
-                  colors={colors.purpleGradient}
+                  colors={colors.redGradient}
                   style={styles.gradientButton}
                 >
                   <Text style={styles.authButtonText}>
@@ -220,27 +224,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 40,
   },
-  logo: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: colors.textPrimary,
-    letterSpacing: 6,
-    textShadowColor: colors.purple,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  subLogo: {
-    fontSize: 18,
-    fontWeight: "300",
-    color: colors.purple,
-    letterSpacing: 3,
-    marginTop: -5,
+  logoImage: {
+    width: 180,
+    height: 70,
+    marginBottom: 16,
   },
   tagline: {
     fontSize: 14,
     fontWeight: "500",
     color: colors.textSecondary,
-    marginTop: 8,
     letterSpacing: 1,
   },
   formContainer: {
