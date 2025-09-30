@@ -142,23 +142,8 @@ const mockFeedData = [
   },
 ];
 
-const mockStories = [
-  { id: "1", user: "Your Story", avatar: "➕", hasStory: false, isOwn: true },
-  { id: "2", user: "SpeedDemon", avatar: "🏎️", hasStory: true, viewed: false },
-  {
-    id: "3",
-    user: "Tokyo_Drifter",
-    avatar: "🚗",
-    hasStory: true,
-    viewed: true,
-  },
-  { id: "4", user: "GT-R_Legend", avatar: "🏁", hasStory: true, viewed: false },
-  { id: "5", user: "Drift_Queen", avatar: "🚙", hasStory: true, viewed: true },
-];
-
 export default function FeedScreen() {
   const [feedData, setFeedData] = useState(mockFeedData);
-  const [stories, setStories] = useState(mockStories);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("For You");
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -463,31 +448,6 @@ export default function FeedScreen() {
         </View>
       </View>
 
-      {/* Stories */}
-      <View style={styles.storiesContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.storiesContent}
-        >
-          {stories.map((story) => (
-            <TouchableOpacity key={story.id} style={styles.storyItem}>
-              <LinearGradient
-                colors={
-                  story.hasStory ? colors.purpleGradient : colors.darkGradient
-                }
-                style={[styles.storyBorder, story.viewed && styles.viewedStory]}
-              >
-                <View style={styles.storyAvatar}>
-                  <Text style={styles.storyEmoji}>{story.avatar}</Text>
-                </View>
-              </LinearGradient>
-              <Text style={styles.storyText}>{story.user}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
         <ScrollView
@@ -562,44 +522,6 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: 4,
     marginLeft: 12,
-  },
-  storiesContainer: {
-    backgroundColor: colors.cardBackground,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent,
-  },
-  storiesContent: {
-    paddingHorizontal: 16,
-  },
-  storyItem: {
-    alignItems: "center",
-    marginRight: 16,
-  },
-  storyBorder: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    padding: 2,
-    marginBottom: 6,
-  },
-  viewedStory: {
-    opacity: 0.5,
-  },
-  storyAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.inputBackground,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  storyEmoji: {
-    fontSize: 24,
-  },
-  storyText: {
-    fontSize: 12,
-    color: colors.textMuted,
   },
   filterContainer: {
     backgroundColor: colors.cardBackground,
