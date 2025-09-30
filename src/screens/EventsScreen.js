@@ -25,6 +25,7 @@ const { width } = Dimensions.get("window");
 
 export default function EventsScreen() {
   const [events, setEvents] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,11 @@ export default function EventsScreen() {
     }).start();
     loadEvents();
   }, []);
+
+  useEffect(() => {
+    // Update filtered events when events or filter changes
+    updateFilteredEvents();
+  }, [events, selectedFilter, user]);
 
   const loadEvents = async () => {
     try {
@@ -87,7 +93,7 @@ export default function EventsScreen() {
     ]);
   };
 
-  const getFilteredEvents = async () => {
+  const updateFilteredEvents = async () => {
     try {
       let filtered = events;
 
@@ -106,6 +112,8 @@ export default function EventsScreen() {
               user.id
             );
             filtered = userData || [];
+          } else {
+            filtered = [];
           }
           break;
         default:
@@ -113,10 +121,10 @@ export default function EventsScreen() {
           break;
       }
 
-      return filtered;
+      setFilteredEvents(filtered);
     } catch (error) {
       console.error("Error filtering events:", error);
-      return events;
+      setFilteredEvents(events);
     }
   };
 
@@ -142,6 +150,8 @@ export default function EventsScreen() {
   };
 
   const handleEventCreated = (newEvent) => {
+    console.log("New event created:", newEvent);
+    console.log("Event image_url:", newEvent.image_url);
     setEvents([newEvent, ...events]);
     setShowCreateModal(false);
   };
@@ -211,6 +221,24 @@ export default function EventsScreen() {
             source={{ uri: item.image_url }}
             style={styles.eventImage}
             resizeMode="cover"
+            onError={(error) => {
+              console.log(
+                "Image load error for event:",
+                item.id,
+                "URL:",
+                item.image_url,
+                "Error:",
+                error
+              );
+            }}
+            onLoad={() => {
+              console.log(
+                "Image loaded successfully for event:",
+                item.id,
+                "URL:",
+                item.image_url
+              );
+            }}
           />
         ) : (
           <LinearGradient
@@ -317,7 +345,7 @@ export default function EventsScreen() {
 
       {/* Events List */}
       <FlatList
-        data={events}
+        data={filteredEvents}
         renderItem={({ item, index }) => (
           <EventCard item={item} index={index} />
         )}
@@ -342,6 +370,8 @@ export default function EventsScreen() {
             <Text style={styles.emptySubtext}>
               {loading
                 ? "Loading events..."
+                : selectedFilter === "My Events"
+                ? "You haven't created any events yet!"
                 : "Create your first event to get started!"}
             </Text>
           </View>

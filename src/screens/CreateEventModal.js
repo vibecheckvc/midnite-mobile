@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../constants/colors";
 import { eventsService } from "../services/eventsService";
+import { storageService } from "../services/storageService";
 import { useAuth } from "../contexts/AuthContext";
 import * as ImagePicker from "expo-image-picker";
 
@@ -51,24 +52,62 @@ export default function CreateEventModal({ visible, onClose, onEventCreated }) {
       // Combine date and time into a single datetime string
       const eventDateTime = new Date(`${date}T${time}`);
 
+      // First create the event without image
       const eventData = {
         user_id: user.id,
         title: title.trim(),
         description: description.trim() || null,
         location: location.trim() || null,
         date: eventDateTime.toISOString(),
-        image_url: imageUri || null,
+        image_url: null,
       };
 
-      const { data, error } = await eventsService.createEvent(eventData);
+      const { data: event, error } = await eventsService.createEvent(eventData);
 
       if (error) {
         Alert.alert("Error", "Failed to create event");
         return;
       }
 
-      Alert.alert("Success", "Event created successfully!");
-      onEventCreated(data);
+      // If there's an image, upload it and update the event
+      if (imageUri && event) {
+        console.log("Uploading image for event:", event.id);
+        const { data: imageUrl, error: uploadError } =
+          await storageService.uploadEventImage(imageUri, event.id);
+
+        if (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          // Event was created successfully, just image upload failed
+          Alert.alert(
+            "Success",
+            "Event created successfully, but image upload failed"
+          );
+        } else {
+          console.log("Image uploaded successfully, URL:", imageUrl);
+          // Update event with image URL
+          const { error: updateError } = await eventsService.updateEvent(
+            event.id,
+            { image_url: imageUrl }
+          );
+
+          if (updateError) {
+            console.error("Error updating event with image:", updateError);
+            Alert.alert(
+              "Success",
+              "Event created successfully, but image upload failed"
+            );
+          } else {
+            console.log("Event updated with image URL:", imageUrl);
+            Alert.alert("Success", "Event created successfully!");
+            // Update the event data with the image URL
+            event.image_url = imageUrl;
+          }
+        }
+      } else {
+        Alert.alert("Success", "Event created successfully!");
+      }
+
+      onEventCreated(event);
       handleClose();
     } catch (error) {
       console.error("Error creating event:", error);
