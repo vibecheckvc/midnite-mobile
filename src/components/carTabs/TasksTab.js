@@ -1,191 +1,127 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  Alert,
-} from "react-native";
+// src/components/carTabs/TasksTab.js
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../constants/colors";
-import { carTasksService } from "../../services/carTasksService";
 
-export default function TasksTab({ carId }) {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingTask, setEditingTask] = useState(null);
+const RED="#b10f2e", BG="#0b0b0c", CARD="rgba(255,255,255,0.04)", BORDER="rgba(255,255,255,0.08)", TEXT="#f6f6f7", MUTED="#a9a9b3";
+const TABLE="car_tasks";
+
+export default function TasksTab({ car, supabase, onReload }) {
+  const [rows, setRows] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [show, setShow] = useState(false); const [editing, setEditing] = useState(null);
+  const [title, setTitle] = useState("");
+
+  const load = useCallback(async() => {
+    const { data, error } = await supabase.from(TABLE).select("*").eq("car_id", car.id).order("created_at", { ascending:false });
+    if (error) Alert.alert("Error", error.message); else setRows(data || []);
+  }, [car?.id, supabase]);
+
+  useEffect(()=>{ load(); },[load]);
 
   useEffect(() => {
-    loadTasks();
-  }, []);
+    if (!car?.id) return;
+    const ch = supabase
+      .channel(`rt_${TABLE}_${car.id}`)
+      .on("postgres_changes", { event:"*", schema:"public", table:TABLE, filter:`car_id=eq.${car.id}` }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [car?.id, supabase, load]);
 
-  const loadTasks = async () => {
-    setLoading(true);
-    const { data, error } = await carTasksService.getTasks(carId);
-    if (error) Alert.alert("Error", "Could not load tasks");
-    else setTasks(data || []);
-    setLoading(false);
-  };
+  const onRefresh = async()=>{ setRefreshing(true); await load(); setRefreshing(false); };
 
-  const toggleCompleted = async (task) => {
-    const { data, error } = await carTasksService.updateTask(task.id, {
-      completed: !task.completed,
-    });
-    if (error) Alert.alert("Error", "Update failed");
-    else setTasks((prev) => prev.map((t) => (t.id === data.id ? data : t)));
-  };
+  const openAdd = ()=>{ setEditing(null); setTitle(""); setShow(true); };
+  const openEdit = (r)=>{ setEditing(r); setTitle(r.title||""); setShow(true); };
 
-  const handleDelete = async (id) => {
-    const { error } = await carTasksService.deleteTask(id);
-    if (error) Alert.alert("Error", "Failed to delete task");
-    else setTasks((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  const handleSave = async (task) => {
-    if (editingTask) {
-      const { data, error } = await carTasksService.updateTask(editingTask.id, task);
-      if (error) Alert.alert("Error", "Update failed");
-      else setTasks((prev) => prev.map((t) => (t.id === data.id ? data : t)));
+  const save = async()=> {
+    if (!title.trim()) return Alert.alert("Missing","Task title required.");
+    const payload = { car_id: car.id, title: title.trim() };
+    if (editing) {
+      setRows(prev => prev.map(x => x.id===editing.id ? { ...x, ...payload } : x));
+      const { error } = await supabase.from(TABLE).update(payload).eq("id", editing.id);
+      if (error) Alert.alert("Error", error.message);
     } else {
-      const { data, error } = await carTasksService.addTask({ ...task, car_id: carId });
-      if (error) Alert.alert("Error", "Add failed");
-      else setTasks((prev) => [data, ...prev]);
+      const temp = { id:`temp_${Date.now()}`, completed:false, created_at:new Date().toISOString(), ...payload };
+      setRows(prev => [temp, ...prev]);
+      const { data, error } = await supabase.from(TABLE).insert(payload).select().single();
+      if (error) Alert.alert("Error", error.message);
+      else setRows(prev => [data, ...prev.filter(r => r.id !== temp.id)]);
     }
-    setShowModal(false);
-    setEditingTask(null);
+    setShow(false); onReload?.();
   };
+
+  const toggle = async(r) => {
+    setRows(prev => prev.map(x => x.id===r.id ? { ...x, completed: !x.completed } : x));
+    const { error } = await supabase.from(TABLE).update({ completed: !r.completed }).eq("id", r.id);
+    if (error) Alert.alert("Error", error.message); else onReload?.();
+  };
+
+  const del = (id) => Alert.alert("Delete task?", "This cannot be undone.", [
+    { text:"Cancel", style:"cancel" },
+    { text:"Delete", style:"destructive", onPress: async ()=>{
+      const prev = rows; setRows(prev.filter(r => r.id !== id));
+      const { error } = await supabase.from(TABLE).delete().eq("id", id);
+      if (error) { Alert.alert("Error", error.message); setRows(prev); } else onReload?.();
+    } }
+  ]);
+
+  const Item = ({ item }) => (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={()=>toggle(item)} style={[styles.checkbox, item.completed && styles.checkboxOn]}>
+          {item.completed && <Ionicons name="checkmark" size={14} color="#fff" />}
+        </TouchableOpacity>
+        <Text style={[styles.title, item.completed && { textDecorationLine:"line-through", opacity:0.6 }]} numberOfLines={2}>{item.title}</Text>
+        <TouchableOpacity onPress={()=>openEdit(item)} style={styles.iconBtn}><Ionicons name="create-outline" size={18} color={TEXT}/></TouchableOpacity>
+        <TouchableOpacity onPress={()=>del(item.id)} style={styles.iconBtnDanger}><Ionicons name="trash-outline" size={18} color="#fff"/></TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
-    <View style={styles.container}>
-      {loading ? (
-        <Text style={styles.loading}>Loading tasks...</Text>
-      ) : tasks.length === 0 ? (
-        <Text style={styles.empty}>No tasks yet.</Text>
-      ) : (
-        <FlatList
-          data={tasks}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.taskCard}>
-              <TouchableOpacity onPress={() => toggleCompleted(item)}>
-                <Ionicons
-                  name={item.completed ? "checkbox-outline" : "square-outline"}
-                  size={22}
-                  color={item.completed ? colors.green : colors.textMuted}
-                />
-              </TouchableOpacity>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text
-                  style={[
-                    styles.taskTitle,
-                    item.completed && { textDecorationLine: "line-through", color: colors.textMuted },
-                  ]}
-                >
-                  {item.title}
-                </Text>
-              </View>
-              <View style={styles.actions}>
-                <TouchableOpacity onPress={() => { setEditingTask(item); setShowModal(true); }}>
-                  <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                  <Ionicons name="trash-outline" size={20} color={colors.red} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        />
-      )}
+    <View style={styles.wrap}>
+      <FlatList
+        data={rows}
+        keyExtractor={(x)=>String(x.id)}
+        renderItem={Item}
+        contentContainerStyle={{ padding:16, paddingBottom:32 }}
+        refreshControl={<RefreshControl tintColor={RED} refreshing={refreshing} onRefresh={onRefresh} />}
+      />
+      <View style={{ paddingHorizontal:16, paddingBottom:16 }}>
+        <TouchableOpacity onPress={openAdd} style={styles.primary}><Ionicons name="add" size={18} color="#fff"/><Text style={styles.primaryTxt}>Add Task</Text></TouchableOpacity>
+      </View>
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => { setEditingTask(null); setShowModal(true); }}>
-        <Ionicons name="add" size={24} color={colors.textPrimary} />
-      </TouchableOpacity>
-
-      {showModal && (
-        <TaskModal
-          visible={showModal}
-          onClose={() => { setShowModal(false); setEditingTask(null); }}
-          onSave={handleSave}
-          initialData={editingTask}
-        />
-      )}
+      <Modal visible={show} animationType="slide" presentationStyle="pageSheet" onRequestClose={()=>setShow(false)}>
+        <View style={styles.modal}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={()=>setShow(false)}><Text style={styles.muted}>Cancel</Text></TouchableOpacity>
+            <Text style={styles.modalTitle}>{editing?"Edit Task":"New Task"}</Text>
+            <TouchableOpacity onPress={save}><Text style={styles.save}>Save</Text></TouchableOpacity>
+          </View>
+          <View style={{ padding:16 }}>
+            <Text style={{ color: MUTED, marginBottom: 6 }}>Title</Text>
+            <TextInput value={title} onChangeText={setTitle} placeholderTextColor={MUTED}
+              style={{ backgroundColor: CARD, borderWidth:1, borderColor:BORDER, borderRadius:12, padding:12, color: TEXT }}/>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-/* -------------------- Modal -------------------- */
-function TaskModal({ visible, onClose, onSave, initialData }) {
-  const [title, setTitle] = useState(initialData?.title || "");
-
-  const save = () => {
-    if (!title.trim()) {
-      Alert.alert("Missing info", "Task title is required.");
-      return;
-    }
-    onSave({ title, completed: initialData?.completed || false });
-  };
-
-  return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalContainer}>
-        <Text style={styles.modalTitle}>{initialData ? "Edit Task" : "Add Task"}</Text>
-        <View style={styles.inputWrap}>
-          <Text style={styles.inputLabel}>Task</Text>
-          <TextInput
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="e.g. Install coilovers"
-            placeholderTextColor={colors.textMuted}
-          />
-        </View>
-        <View style={styles.modalActions}>
-          <TouchableOpacity onPress={onClose}><Text style={styles.cancel}>Cancel</Text></TouchableOpacity>
-          <TouchableOpacity onPress={save}><Text style={styles.save}>Save</Text></TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  loading: { textAlign: "center", color: colors.textMuted, marginTop: 20 },
-  empty: { textAlign: "center", color: colors.textMuted, marginTop: 20 },
-  taskCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 14,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  taskTitle: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
-  actions: { flexDirection: "row", gap: 14, marginLeft: 12 },
-  fab: {
-    position: "absolute",
-    bottom: 20, right: 20, width: 56, height: 56, borderRadius: 28,
-    alignItems: "center", justifyContent: "center", backgroundColor: colors.purple,
-    shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 6, elevation: 6,
-  },
-  modalContainer: { flex: 1, backgroundColor: colors.background, padding: 20 },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: colors.textPrimary, marginBottom: 20, textAlign: "center" },
-  inputWrap: { marginBottom: 14 },
-  inputLabel: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
-  input: {
-    borderWidth: 1, borderColor: colors.accent, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, color: colors.textPrimary,
-    backgroundColor: colors.inputBackground,
-  },
-  modalActions: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
-  cancel: { color: colors.textMuted, fontWeight: "600" },
-  save: { color: colors.purple, fontWeight: "700" },
+  wrap:{ flex:1, backgroundColor: BG },
+  card:{ backgroundColor: CARD, borderWidth:1, borderColor:BORDER, borderRadius:16, padding:14, marginBottom:12 },
+  header:{ flexDirection:"row", alignItems:"center", gap:10 },
+  title:{ color: TEXT, fontWeight:"800", fontSize:16, flex:1 },
+  checkbox:{ width:22, height:22, borderRadius:6, borderWidth:1, borderColor:"rgba(255,255,255,0.2)", alignItems:"center", justifyContent:"center", backgroundColor:"rgba(255,255,255,0.04)" },
+  checkboxOn:{ backgroundColor: RED, borderColor:"rgba(177,15,46,0.8)" },
+  iconBtn:{ borderWidth:1, borderColor:"rgba(255,255,255,0.18)", padding:8, borderRadius:999, backgroundColor:"rgba(255,255,255,0.06)" },
+  iconBtnDanger:{ borderWidth:1, borderColor:"rgba(239,68,68,0.6)", padding:8, borderRadius:999, backgroundColor:"rgba(239,68,68,0.24)" },
+  primary:{ backgroundColor: RED, paddingVertical:12, borderRadius:12, alignItems:"center", flexDirection:"row", justifyContent:"center", gap:8 },
+  primaryTxt:{ color:"#fff", fontWeight:"800" },
+  modal:{ flex:1, backgroundColor: BG },
+  modalHeader:{ padding:16, borderBottomWidth:1, borderBottomColor:BORDER, flexDirection:"row", alignItems:"center", justifyContent:"space-between" },
+  modalTitle:{ color: TEXT, fontWeight:"800" },
+  muted:{ color: MUTED }, save:{ color: RED, fontWeight:"800" },
 });

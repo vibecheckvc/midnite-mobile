@@ -1,248 +1,222 @@
-import React, { useState, useEffect } from "react";
+// src/components/AddCarModal.js
+import React, { useState } from "react";
 import {
+  Modal,
   View,
   Text,
-  Modal,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   Alert,
-  ActivityIndicator,
+  Image,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { supabase } from "../lib/supabase";
-import { colors } from "../constants/colors";
 
-export default function AddCarModal({ visible, onClose, onCarAdded, userId, initialCar }) {
-  const isEdit = !!initialCar;
+const RED = "#b10f2e";
+const BG = "#0b0b0c";
+const CARD = "rgba(255,255,255,0.04)";
+const BORDER = "rgba(255,255,255,0.08)";
+const TEXT = "#f6f6f7";
+const MUTED = "#a9a9b3";
+const BUCKET = "car-photos";
+
+export default function AddCarModal({ visible, onClose, supabase, user, onAdded }) {
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
-  const [trim, setTrim] = useState(""); // optional nickname/variant
+  const [trim, setTrim] = useState("");
   const [mileage, setMileage] = useState("");
   const [coverUri, setCoverUri] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    if (isEdit) {
-      setMake(initialCar.make);
-      setModel(initialCar.model);
-      setYear(String(initialCar.year));
-      setTrim(initialCar.trim || "");
-      setMileage(String(initialCar.mileage ?? "0"));
-      setCoverUri(initialCar.cover_url || null);
-    } else {
-      setMake("");
-      setModel("");
-      setYear("");
-      setTrim("");
-      setMileage("");
-      setCoverUri(null);
-    }
-  }, [initialCar, isEdit, visible]);
-
-  const pickCover = async () => {
+  const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission needed", "Please allow access to your photos.");
+      Alert.alert("Permission required", "Please allow photo library access.");
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
+    const r = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [16, 9],
-      quality: 0.85,
+      quality: 0.8,
     });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      setCoverUri(result.assets[0].uri);
-    }
+    if (!r.canceled) setCoverUri(r.assets[0].uri);
   };
 
-  const uploadCoverIfNeeded = async (carId) => {
-    if (!coverUri || coverUri.startsWith("http")) return coverUri;
+  const uploadCover = async (uri, carId) => {
     try {
-      const res = await fetch(coverUri);
+      const filename = `car_${carId}/cover_${Date.now()}.jpg`;
+      const res = await fetch(uri);
       const blob = await res.blob();
-      const filename = `car_${carId}_${Date.now()}.jpg`;
-      const { error } = await supabase.storage
-        .from("car-images")
+      const { error: upErr } = await supabase.storage
+        .from(BUCKET)
         .upload(filename, blob, { contentType: "image/jpeg" });
-
-      if (error) throw error;
-
-      const { data: pub } = supabase.storage.from("car-images").getPublicUrl(filename);
-      return pub?.publicUrl ?? null;
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(filename);
+      return pub?.publicUrl || null;
     } catch (e) {
-      console.error("cover upload failed", e);
+      console.log("Upload error:", e.message);
       return null;
     }
   };
 
-  const saveCar = async () => {
-    if (!make || !model || !year) {
-      Alert.alert("Missing info", "Year, Make, and Model are required.");
+  const handleAdd = async () => {
+    if (!make.trim() || !model.trim() || !year.trim()) {
+      Alert.alert("Missing fields", "Please fill in make, model, and year.");
       return;
     }
-
-    setSaving(true);
     try {
-      if (isEdit) {
-        const { data, error } = await supabase
-          .from("cars")
-          .update({
-            make,
-            model,
-            year: Number(year),
-            trim,
-            mileage: Number(mileage || 0),
-          })
-          .eq("id", initialCar.id)
-          .select()
-          .single();
-        if (error) throw error;
+      setUploading(true);
 
-        const coverUrl = await uploadCoverIfNeeded(initialCar.id);
-        let final = data;
-        if (coverUrl) {
-          const { data: upd2 } = await supabase
-            .from("cars")
-            .update({ cover_url: coverUrl })
-            .eq("id", initialCar.id)
-            .select()
-            .single();
-          if (upd2) final = upd2;
-        }
-        onCarAdded(final);
-      } else {
-        const { data, error } = await supabase
-          .from("cars")
-          .insert([
-            {
-              user_id: userId,
-              make,
-              model,
-              year: Number(year),
-              trim,
-              mileage: Number(mileage || 0),
-              is_public: false,
-            },
-          ])
-          .select()
-          .single();
-        if (error) throw error;
+      const { data: insertData, error: insertError } = await supabase
+        .from("cars")
+        .insert({
+          user_id: user?.id ?? null,
+          make: make.trim(),
+          model: model.trim(),
+          year: parseInt(year),
+          trim: trim?.trim() || null,
+          mileage: mileage ? parseInt(mileage) : 0,
+          is_public: false,
+        })
+        .select()
+        .single();
 
-        const coverUrl = await uploadCoverIfNeeded(data.id);
-        let final = data;
+      if (insertError) throw insertError;
+      let coverUrl = null;
+
+      if (coverUri) {
+        coverUrl = await uploadCover(coverUri, insertData.id);
         if (coverUrl) {
-          const { data: upd2 } = await supabase
-            .from("cars")
-            .update({ cover_url: coverUrl })
-            .eq("id", data.id)
-            .select()
-            .single();
-          if (upd2) final = upd2;
+          await supabase.from("cars").update({ cover_url: coverUrl }).eq("id", insertData.id);
         }
-        onCarAdded(final);
       }
-      onClose();
+
+      onAdded?.(insertData);
+      Alert.alert("Success", "Car added successfully!");
+      resetForm();
+      onClose?.();
     } catch (e) {
-      Alert.alert("Error", "Could not save car.");
       console.error(e);
+      Alert.alert("Error", e.message);
     } finally {
-      setSaving(false);
+      setUploading(false);
     }
   };
 
+  const resetForm = () => {
+    setMake("");
+    setModel("");
+    setYear("");
+    setTrim("");
+    setMileage("");
+    setCoverUri(null);
+  };
+
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-      >
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={styles.modal}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={styles.muted}>Cancel</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>{isEdit ? "Edit Car" : "Add Car"}</Text>
-          <TouchableOpacity onPress={saveCar} disabled={saving}>
-            {saving ? <ActivityIndicator color={colors.purple} /> : <Text style={styles.saveText}>Save</Text>}
+          <Text style={styles.modalTitle}>Add Car</Text>
+          <TouchableOpacity onPress={handleAdd} disabled={uploading}>
+            <Text style={[styles.save, uploading && { opacity: 0.6 }]}>
+              {uploading ? "Saving..." : "Save"}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Cover Image */}
-          <TouchableOpacity onPress={pickCover} style={styles.coverBox}>
+        {/* Form */}
+        <ScrollView contentContainerStyle={styles.form}>
+          <Field label="Make" value={make} onChangeText={setMake} />
+          <Field label="Model" value={model} onChangeText={setModel} />
+          <Field label="Year" value={year} onChangeText={setYear} keyboardType="numeric" />
+          <Field label="Trim" value={trim} onChangeText={setTrim} />
+          <Field label="Mileage" value={mileage} onChangeText={setMileage} keyboardType="numeric" />
+
+          <View style={{ marginTop: 16 }}>
+            <Text style={{ color: MUTED, marginBottom: 8 }}>Cover Photo</Text>
             {coverUri ? (
-              <Image source={{ uri: coverUri }} style={styles.coverImage} />
+              <TouchableOpacity onPress={pickImage} style={styles.coverPreview}>
+                <Image source={{ uri: coverUri }} style={{ width: "100%", height: 180, borderRadius: 12 }} />
+                <View style={styles.changeOverlay}>
+                  <Ionicons name="refresh-outline" size={22} color="#fff" />
+                  <Text style={{ color: "#fff", marginTop: 4, fontSize: 12 }}>Change</Text>
+                </View>
+              </TouchableOpacity>
             ) : (
-              <LinearGradient colors={colors.purpleGradient} style={styles.coverPlaceholder}>
-                <Ionicons name="image-outline" size={32} color={colors.textPrimary} />
-                <Text style={styles.coverText}>Add Cover</Text>
-              </LinearGradient>
+              <TouchableOpacity onPress={pickImage} style={styles.uploadBox}>
+                <Ionicons name="cloud-upload-outline" size={22} color={TEXT} />
+                <Text style={{ color: TEXT, marginTop: 4 }}>Upload Cover</Text>
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
-
-          {/* Inputs */}
-          <FormInput label="Year" value={year} onChangeText={setYear} keyboardType="number-pad" />
-          <FormInput label="Make" value={make} onChangeText={setMake} />
-          <FormInput label="Model" value={model} onChangeText={setModel} />
-          <FormInput label="Trim / Nickname" value={trim} onChangeText={setTrim} />
-          <FormInput label="Mileage" value={mileage} onChangeText={setMileage} keyboardType="number-pad" />
-        </View>
-      </KeyboardAvoidingView>
+          </View>
+        </ScrollView>
+      </View>
     </Modal>
   );
 }
 
-const FormInput = ({ label, ...props }) => (
-  <View style={styles.inputWrap}>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <TextInput style={styles.input} placeholderTextColor={colors.textMuted} {...props} />
-  </View>
-);
+function Field({ label, ...props }) {
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <Text style={{ color: MUTED, marginBottom: 6 }}>{label}</Text>
+      <TextInput
+        {...props}
+        placeholderTextColor={MUTED}
+        style={{
+          backgroundColor: CARD,
+          borderWidth: 1,
+          borderColor: BORDER,
+          borderRadius: 12,
+          padding: 12,
+          color: TEXT,
+        }}
+      />
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  modal: { flex: 1, backgroundColor: BG },
+  modalHeader: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.accent,
-    backgroundColor: colors.cardBackground,
+    borderBottomColor: BORDER,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  cancelText: { color: colors.textMuted, fontWeight: "600" },
-  title: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },
-  saveText: { color: colors.purple, fontWeight: "700" },
-  content: { padding: 16 },
-  coverBox: {
-    height: 140,
+  modalTitle: { color: TEXT, fontWeight: "700", fontSize: 16 },
+  save: { color: RED, fontWeight: "700" },
+  muted: { color: MUTED },
+  form: { padding: 16, paddingBottom: 40 },
+  uploadBox: {
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
     borderRadius: 12,
-    marginBottom: 16,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.accent,
+    height: 180,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  coverImage: { width: "100%", height: "100%" },
-  coverPlaceholder: { flex: 1, justifyContent: "center", alignItems: "center" },
-  coverText: { color: colors.textPrimary, marginTop: 6, fontWeight: "600" },
-  inputWrap: { marginBottom: 12 },
-  inputLabel: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
-  input: {
-    height: 44,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    paddingHorizontal: 12,
-    color: colors.textPrimary,
-    backgroundColor: colors.inputBackground,
+  coverPreview: {
+    position: "relative",
+  },
+  changeOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
   },
 });

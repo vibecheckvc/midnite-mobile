@@ -1,3 +1,4 @@
+// App.js
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -11,11 +12,13 @@ import AuthScreen from "./src/screens/AuthScreen";
 import MainTabs from "./src/navigation/MainTabs";
 import CarDetailScreen from "./src/screens/CarDetailScreen";
 
-// Import auth context
+// Import Supabase + Auth
+import { supabase } from "./src/lib/supabase";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 
 const Stack = createStackNavigator();
 
+/* =================== APP NAVIGATION =================== */
 function AppNavigator() {
   const { user, loading } = useAuth();
 
@@ -25,28 +28,31 @@ function AppNavigator() {
 
   return (
     <NavigationContainer>
-      <StatusBar style="light" backgroundColor="#1a0d1f" />
-      <Stack.Navigator>
+      <StatusBar style="light" backgroundColor="#000000" />
+
+      <Stack.Navigator screenOptions={{ animation: "fade_from_bottom" }}>
         {user ? (
           <>
+            {/* Main Tabs (garage, community, etc.) */}
             <Stack.Screen
               name="MainTabs"
               component={MainTabs}
               options={{ headerShown: false }}
             />
-            <Stack.Screen
-              name="CarDetail"
-              component={CarDetailScreen}
-              options={{
-                headerShown: true,
-                headerStyle: { backgroundColor: "#1a0d1f" }, // deep purple background
-                headerTintColor: "#fff",
-                headerTitleStyle: { fontWeight: "700" },
-                title: "Car Details",
-              }}
-            />
+
+            {/* ✅ Fixed: inject supabase + user into CarDetailScreen */}
+            <Stack.Screen name="CarDetail" options={{ headerShown: false }}>
+              {props => (
+                <CarDetailScreen
+                  {...props}
+                  supabase={supabase}
+                  user={user}
+                />
+              )}
+            </Stack.Screen>
           </>
         ) : (
+          /* Auth flow */
           <Stack.Screen
             name="Auth"
             component={AuthScreen}
@@ -58,6 +64,7 @@ function AppNavigator() {
   );
 }
 
+/* =================== ROOT =================== */
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -68,6 +75,7 @@ export default function App() {
   );
 }
 
+/* =================== STYLES =================== */
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,179 +1,131 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  Alert,
-} from "react-native";
+// src/components/carTabs/TimelineTab.js
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert, RefreshControl, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../constants/colors";
-import { buildTimelineService } from "../../services/buildTimelineService";
 
-export default function TimelineTab({ carId }) {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null);
+const RED="#b10f2e", BG="#0b0b0c", CARD="rgba(255,255,255,0.04)", BORDER="rgba(255,255,255,0.08)", TEXT="#f6f6f7", MUTED="#a9a9b3";
+const TABLE="build_timeline";
+
+export default function TimelineTab({ car, user, supabase, onReload }) {
+  const [rows, setRows] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [show, setShow] = useState(false); const [editing, setEditing] = useState(null);
+  const [f, setF] = useState({ title:"", description:"", date:"" });
+
+  const load = useCallback(async() => {
+    const { data, error } = await supabase.from(TABLE).select("*").eq("car_id", car.id).order("date", { ascending:false });
+    if (error) Alert.alert("Error", error.message); else setRows(data || []);
+  }, [car?.id, supabase]);
+
+  useEffect(()=>{ load(); },[load]);
 
   useEffect(() => {
-    loadEvents();
-  }, []);
+    if (!car?.id) return;
+    const ch = supabase
+      .channel(`rt_${TABLE}_${car.id}`)
+      .on("postgres_changes", { event:"*", schema:"public", table:TABLE, filter:`car_id=eq.${car.id}` }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [car?.id, supabase, load]);
 
-  const loadEvents = async () => {
-    setLoading(true);
-    const { data, error } = await buildTimelineService.getEvents(carId);
-    if (error) Alert.alert("Error", "Could not load timeline");
-    else setEvents(data || []);
-    setLoading(false);
-  };
+  const onRefresh = async()=>{ setRefreshing(true); await load(); setRefreshing(false); };
 
-  const handleDelete = async (id) => {
-    const { error } = await buildTimelineService.deleteEvent(id);
-    if (error) Alert.alert("Error", "Failed to delete event");
-    else setEvents((prev) => prev.filter((e) => e.id !== id));
-  };
+  const openAdd = ()=>{ setEditing(null); setF({ title:"", description:"", date:new Date().toISOString().slice(0,10) }); setShow(true); };
+  const openEdit = (r)=>{ setEditing(r); setF({ title:r.title||"", description:r.description||"", date: r.date ? String(r.date).slice(0,10) : "" }); setShow(true); };
 
-  const handleSave = async (event) => {
-    if (editingEvent) {
-      const { data, error } = await buildTimelineService.updateEvent(editingEvent.id, event);
-      if (error) Alert.alert("Error", "Update failed");
-      else setEvents((prev) => prev.map((e) => (e.id === data.id ? data : e)));
+  const save = async()=> {
+    if (!f.title.trim()) return Alert.alert("Missing","Title required.");
+    if (!f.date) return Alert.alert("Missing","Date required.");
+    const payload = { user_id:user?.id??null, car_id:car.id, title:f.title.trim(), description:f.description?.trim()||null, date:new Date(f.date).toISOString(), is_public:false };
+    if (editing) {
+      setRows(prev => prev.map(x => x.id===editing.id ? { ...x, ...payload } : x));
+      const { error } = await supabase.from(TABLE).update(payload).eq("id", editing.id);
+      if (error) Alert.alert("Error", error.message);
     } else {
-      const { data, error } = await buildTimelineService.addEvent({ ...event, car_id: carId });
-      if (error) Alert.alert("Error", "Add failed");
-      else setEvents((prev) => [data, ...prev]);
+      const temp = { id:`temp_${Date.now()}`, created_at:new Date().toISOString(), ...payload };
+      setRows(prev => [temp, ...prev]);
+      const { data, error } = await supabase.from(TABLE).insert(payload).select().single();
+      if (error) Alert.alert("Error", error.message);
+      else setRows(prev => [data, ...prev.filter(r => r.id !== temp.id)]);
     }
-    setShowModal(false);
-    setEditingEvent(null);
+    setShow(false); onReload?.();
   };
+
+  const del = (id) => Alert.alert("Delete timeline entry?", "This cannot be undone.", [
+    { text:"Cancel", style:"cancel" },
+    { text:"Delete", style:"destructive", onPress: async ()=>{
+      const prev = rows; setRows(prev.filter(r => r.id !== id));
+      const { error } = await supabase.from(TABLE).delete().eq("id", id);
+      if (error) { Alert.alert("Error", error.message); setRows(prev); } else onReload?.();
+    } }
+  ]);
+
+  const Item = ({ item }) => (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <Text style={styles.date}>{new Date(item.date).toLocaleDateString()}</Text>
+        <View style={{ flexDirection:"row", gap:8 }}>
+          <TouchableOpacity onPress={()=>openEdit(item)} style={styles.iconBtn}><Ionicons name="create-outline" size={18} color={TEXT}/></TouchableOpacity>
+          <TouchableOpacity onPress={()=>del(item.id)} style={styles.iconBtnDanger}><Ionicons name="trash-outline" size={18} color="#fff"/></TouchableOpacity>
+        </View>
+      </View>
+      <Text style={styles.title}>{item.title}</Text>
+      {!!item.description && <Text style={styles.desc}>{item.description}</Text>}
+    </View>
+  );
 
   return (
-    <View style={styles.container}>
-      {loading ? (
-        <Text style={styles.loading}>Loading timeline...</Text>
-      ) : events.length === 0 ? (
-        <Text style={styles.empty}>No events logged yet.</Text>
-      ) : (
-        <FlatList
-          data={events}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.eventCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.eventTitle}>{item.title}</Text>
-                {item.description ? <Text style={styles.eventDesc}>{item.description}</Text> : null}
-                <Text style={styles.eventDate}>
-                  {new Date(item.date).toLocaleDateString()}
-                </Text>
-              </View>
-              <View style={styles.actions}>
-                <TouchableOpacity onPress={() => { setEditingEvent(item); setShowModal(true); }}>
-                  <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                  <Ionicons name="trash-outline" size={20} color={colors.red} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        />
-      )}
+    <View style={styles.wrap}>
+      <FlatList
+        data={rows}
+        keyExtractor={(x)=>String(x.id)}
+        renderItem={Item}
+        contentContainerStyle={{ padding:16, paddingBottom:32 }}
+        refreshControl={<RefreshControl tintColor={RED} refreshing={refreshing} onRefresh={onRefresh} />}
+      />
+      <View style={{ paddingHorizontal:16, paddingBottom:16 }}>
+        <TouchableOpacity onPress={openAdd} style={styles.primary}><Ionicons name="add" size={18} color="#fff"/><Text style={styles.primaryTxt}>Add Milestone</Text></TouchableOpacity>
+      </View>
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => { setEditingEvent(null); setShowModal(true); }}>
-        <Ionicons name="add" size={24} color={colors.textPrimary} />
-      </TouchableOpacity>
-
-      {showModal && (
-        <TimelineModal
-          visible={showModal}
-          onClose={() => { setShowModal(false); setEditingEvent(null); }}
-          onSave={handleSave}
-          initialData={editingEvent}
-        />
-      )}
+      <Modal visible={show} animationType="slide" presentationStyle="pageSheet" onRequestClose={()=>setShow(false)}>
+        <View style={styles.modal}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={()=>setShow(false)}><Text style={styles.muted}>Cancel</Text></TouchableOpacity>
+            <Text style={styles.modalTitle}>{editing?"Edit Milestone":"New Milestone"}</Text>
+            <TouchableOpacity onPress={save}><Text style={styles.save}>Save</Text></TouchableOpacity>
+          </View>
+          <View style={{ padding:16 }}>
+            <Field label="Title" value={f.title} onChangeText={(t)=>setF({...f,title:t})}/>
+            <Field label="Date (YYYY-MM-DD)" value={f.date} onChangeText={(t)=>setF({...f,date:t})} keyboardType={Platform.OS==="web"?"default":"numbers-and-punctuation"}/>
+            <Field label="Description" value={f.description} onChangeText={(t)=>setF({...f,description:t})} multiline/>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-/* -------------------- Modal -------------------- */
-function TimelineModal({ visible, onClose, onSave, initialData }) {
-  const [title, setTitle] = useState(initialData?.title || "");
-  const [description, setDescription] = useState(initialData?.description || "");
-  const [date, setDate] = useState(initialData?.date || "");
-
-  const save = () => {
-    if (!title.trim() || !date) {
-      Alert.alert("Missing info", "Title and Date are required.");
-      return;
-    }
-    onSave({ title, description, date });
-  };
-
+function Field({ label, ...props }) {
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalContainer}>
-        <Text style={styles.modalTitle}>{initialData ? "Edit Event" : "Add Event"}</Text>
-
-        <FormInput label="Title" value={title} onChangeText={setTitle} />
-        <FormInput label="Description" value={description} onChangeText={setDescription} />
-        <FormInput label="Date" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
-
-        <View style={styles.modalActions}>
-          <TouchableOpacity onPress={onClose}><Text style={styles.cancel}>Cancel</Text></TouchableOpacity>
-          <TouchableOpacity onPress={save}><Text style={styles.save}>Save</Text></TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
+    <View style={{ marginBottom: 12 }}>
+      <Text style={{ color: MUTED, marginBottom: 6 }}>{label}</Text>
+      <TextInput {...props} placeholderTextColor={MUTED} style={{ backgroundColor: CARD, borderWidth:1, borderColor:BORDER, borderRadius:12, padding:12, color: TEXT }}/>
+    </View>
   );
 }
-
-const FormInput = ({ label, ...props }) => (
-  <View style={styles.inputWrap}>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <TextInput style={styles.input} placeholderTextColor={colors.textMuted} {...props} />
-  </View>
-);
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  loading: { textAlign: "center", color: colors.textMuted, marginTop: 20 },
-  empty: { textAlign: "center", color: colors.textMuted, marginTop: 20 },
-  eventCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 14,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  eventTitle: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },
-  eventDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
-  eventDate: { fontSize: 12, color: colors.textMuted, marginTop: 6 },
-  actions: { flexDirection: "row", gap: 12 },
-  fab: {
-    position: "absolute",
-    bottom: 20, right: 20, width: 56, height: 56, borderRadius: 28,
-    alignItems: "center", justifyContent: "center", backgroundColor: colors.purple,
-    shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 6, elevation: 6,
-  },
-  modalContainer: { flex: 1, backgroundColor: colors.background, padding: 20 },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: colors.textPrimary, marginBottom: 20, textAlign: "center" },
-  inputWrap: { marginBottom: 14 },
-  inputLabel: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
-  input: {
-    borderWidth: 1, borderColor: colors.accent, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, color: colors.textPrimary,
-    backgroundColor: colors.inputBackground,
-  },
-  modalActions: { flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
-  cancel: { color: colors.textMuted, fontWeight: "600" },
-  save: { color: colors.purple, fontWeight: "700" },
+  wrap:{ flex:1, backgroundColor: BG },
+  card:{ backgroundColor: CARD, borderWidth:1, borderColor:BORDER, borderRadius:16, padding:14, marginBottom:12 },
+  header:{ flexDirection:"row", justifyContent:"space-between", alignItems:"center" },
+  date:{ color: MUTED, fontWeight:"800" },
+  title:{ color: TEXT, fontWeight:"800", fontSize:16, marginTop:6 },
+  desc:{ color: TEXT, marginTop:6, lineHeight:20 },
+  iconBtn:{ borderWidth:1, borderColor:"rgba(255,255,255,0.18)", padding:8, borderRadius:999, backgroundColor:"rgba(255,255,255,0.06)" },
+  iconBtnDanger:{ borderWidth:1, borderColor:"rgba(239,68,68,0.6)", padding:8, borderRadius:999, backgroundColor:"rgba(239,68,68,0.24)" },
+  primary:{ backgroundColor: RED, paddingVertical:12, borderRadius:12, alignItems:"center", flexDirection:"row", justifyContent:"center", gap:8 },
+  primaryTxt:{ color:"#fff", fontWeight:"800" },
+  modal:{ flex:1, backgroundColor: BG },
+  modalHeader:{ padding:16, borderBottomWidth:1, borderBottomColor:BORDER, flexDirection:"row", alignItems:"center", justifyContent:"space-between" },
+  modalTitle:{ color: TEXT, fontWeight:"800" },
+  muted:{ color: MUTED }, save:{ color: RED, fontWeight:"800" },
 });
