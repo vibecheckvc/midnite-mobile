@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+// screens/ProfileScreen.js
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,411 +7,366 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
-  Dimensions,
-  Alert,
   Image,
+  Modal,
+  TextInput,
+  Alert,
+  Linking,
+  Platform,
+  KeyboardAvoidingView,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { colors as appColors } from "../constants/colors";
+import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../contexts/AuthContext";
+import { profileService } from "../services/profileService";
+import { carsService } from "../services/carsService";
+import { communityService } from "../services/communityService"; // ✅ added
+import CarShowcase from "../components/CarShowcase";
 
 const { width } = Dimensions.get("window");
 
-// Mock stats data
-const mockStats = [
-  { label: "Posts", value: "156" },
-  { label: "Followers", value: "1.2K" },
-  { label: "Following", value: "892" },
-  { label: "Cars", value: "3" },
-];
-
-export default function ProfileScreen() {
-  const { signOut, user: authUser } = useAuth();
+export default function ProfileScreen({ navigation }) {
+  const { user, signOut } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [cars, setCars] = useState([]);
+  const [followers, setFollowers] = useState(0);        // ✅ added
+  const [followingCount, setFollowingCount] = useState(0); // ✅ added
+  const [editVisible, setEditVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0.5)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Get username from auth user metadata or email
-  const username =
-    authUser?.user_metadata?.username ||
-    authUser?.email?.split("@")[0] ||
-    "User";
-  const displayName = authUser?.user_metadata?.full_name || username;
+  const [fullName, setFullName] = useState("");
+  const [bio, setBio] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [tiktok, setTiktok] = useState("");
+  const [youtube, setYoutube] = useState("");
+  const [website, setWebsite] = useState("");
 
   useEffect(() => {
+    loadProfile();
+    if (user?.id) {
+      loadCars();
+      loadFollowCounts(); // ✅ added
+    }
+
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 600,
+      duration: 800,
       useNativeDriver: true,
     }).start();
-  }, []);
 
-  const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await signOut();
-          } catch (error) {
-            Alert.alert("Error", "Failed to sign out");
-          }
-        },
-      },
-    ]);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 0.5, duration: 1500, useNativeDriver: true }),
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.03, duration: 2000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [user]);
+
+  const loadProfile = async () => {
+    const { data, error } = await profileService.getProfile(user.id);
+    if (error) console.error(error);
+    else {
+      setProfile(data);
+      setFullName(data.full_name || "");
+      setBio(data.bio || "");
+      setInstagram(data.instagram || "");
+      setTiktok(data.tiktok || "");
+      setYoutube(data.youtube || "");
+      setWebsite(data.website || "");
+    }
   };
 
-  const ProfileSection = ({ title, children, style }) => (
-    <Animated.View
-      style={[
-        styles.section,
-        {
-          opacity: fadeAnim,
-          transform: [
-            {
-              translateY: fadeAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [20, 0],
-              }),
-            },
-          ],
-        },
-        style,
-      ]}
-    >
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </Animated.View>
-  );
+  const loadCars = async () => {
+    const { data, error } = await carsService.getCarsByUser(user.id);
+    if (!error && data) setCars(data);
+  };
+
+  // ✅ NEW: safe follower/following loader with guards
+  const loadFollowCounts = async () => {
+    try {
+      const counts = await communityService.getFollowCounts(user.id);
+      setFollowers(counts?.followers ?? 0);
+      setFollowingCount(counts?.following ?? 0);
+    } catch (e) {
+      console.log("follow count error:", e?.message);
+      setFollowers(0);
+      setFollowingCount(0);
+    }
+  };
+
+  const handleAvatarChange = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setLoading(true);
+      const { data, error } = await profileService.uploadAvatar(result.assets[0].uri, user.id);
+      if (error) Alert.alert("Upload Failed", error.message);
+      else setProfile({ ...profile, avatar_url: data });
+      setLoading(false);
+    }
+  };
+
+  const normalizeLink = (value, platform) => {
+    if (!value) return "";
+    if (value.startsWith("http")) return value;
+    switch (platform) {
+      case "instagram":
+        return `https://instagram.com/${value.replace("@", "")}`;
+      case "tiktok":
+        return `https://tiktok.com/@${value.replace("@", "")}`;
+      case "youtube":
+        return `https://youtube.com/@${value.replace("@", "")}`;
+      default:
+        return value;
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setLoading(true);
+    const updates = {
+      full_name: fullName.trim(),
+      bio: bio.trim(),
+      instagram: normalizeLink(instagram.trim(), "instagram"),
+      tiktok: normalizeLink(tiktok.trim(), "tiktok"),
+      youtube: normalizeLink(youtube.trim(), "youtube"),
+      website: website.trim(),
+    };
+    const { error } = await profileService.updateProfile(user.id, updates);
+    setLoading(false);
+    setEditVisible(false);
+    if (error) Alert.alert("Error", "Failed to update profile");
+    else {
+      loadProfile();
+      loadFollowCounts(); // keep stats fresh after edit
+    }
+  };
+
+  const openLink = (url) => {
+    if (!url) return;
+    Linking.openURL(url.startsWith("http") ? url : `https://${url}`);
+  };
+
+  const renderBadges = () => {
+    if (!profile?.badges || profile.badges.length === 0) return null;
+    return (
+      <View style={styles.badgeContainer}>
+        {profile.badges.map((badge, index) => (
+          <LinearGradient key={index} colors={["#8B0000", "#320000"]} style={styles.badgeChip}>
+            <Text style={styles.badgeText}>{badge}</Text>
+          </LinearGradient>
+        ))}
+      </View>
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Header */}
-        <LinearGradient
-          colors={appColors?.darkGradient || ["#1a1a2e", "#16213e"]}
-          style={styles.header}
-        >
-          <Animated.View
-            style={[
-              styles.headerContent,
-              {
-                opacity: fadeAnim,
-                transform: [
-                  {
-                    translateY: fadeAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [30, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            {/* Profile Picture */}
-            <View style={styles.profilePictureContainer}>
-              <View style={styles.profilePicture}>
+    <LinearGradient colors={["#000", "#0a0a0a", "#000"]} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.bannerContainer}>
+          <LinearGradient colors={["#150000", "#000000"]} style={styles.bannerGradient}>
+            <Text style={styles.bannerText}>
+              {profile?.full_name ? `${profile.full_name}'s Garage` : "Welcome to Your Garage"}
+            </Text>
+          </LinearGradient>
+        </View>
+
+        {profile && (
+          <Animated.View style={[styles.profileContainer, { opacity: fadeAnim }]}>
+            <View style={styles.avatarWrapper}>
+              <Animated.View
+                style={[styles.avatarGlow, { opacity: glowAnim, shadowOpacity: glowAnim }]}
+              />
+              <TouchableOpacity onPress={handleAvatarChange}>
                 <Image
                   source={{
-                    uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      displayName
-                    )}&background=8b5cf6&color=fff&size=120&bold=true`,
+                    uri:
+                      profile.avatar_url ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        profile.full_name || "User"
+                      )}&background=000&color=fff`,
                   }}
-                  style={styles.profileImage}
-                  defaultSource={require("./midnte.png")}
-                />
-              </View>
-              <TouchableOpacity style={styles.editPhotoButton}>
-                <Ionicons
-                  name="camera"
-                  size={16}
-                  color={appColors.textPrimary}
+                  style={styles.avatar}
                 />
               </TouchableOpacity>
             </View>
 
-            {/* User Info */}
-            <View style={styles.userInfoContainer}>
-              <Text style={styles.userName}>{displayName}</Text>
-              <Text style={styles.userHandle}>@{username}</Text>
+            <Animated.Text style={[styles.name, { transform: [{ scale: pulseAnim }] }]}>
+              {profile.full_name || "Unnamed Racer"}
+            </Animated.Text>
+            <Text style={styles.username}>@{profile.username || "user"}</Text>
+            {renderBadges()}
+
+            <Text style={styles.bio}>{profile.bio || "Every car tells a story. This is mine."}</Text>
+
+            {/* Quick Actions */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionGlow]}
+                onPress={() => setEditVisible(true)}
+              >
+                <Ionicons name="settings-outline" size={22} color="#fff" />
+                <Text style={styles.actionLabel}>Edit</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionGlow]}
+                onPress={() => navigation.navigate("Garage")}
+              >
+                <Ionicons name="car-sport-outline" size={22} color="#fff" />
+                <Text style={styles.actionLabel}>Garage</Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Bio */}
-            <Text style={styles.bio}>
-              Car enthusiast, drift lover, and midnight racer. Building the
-              perfect ride and sharing the journey with fellow gearheads!
-            </Text>
-
-            {/* Stats */}
+            {/* ✅ Stats now: Followers / Following / Cars */}
             <View style={styles.statsContainer}>
-              {mockStats.map((stat, index) => (
-                <View key={index} style={styles.statItem}>
+              {[
+                { label: "Followers", value: followers },
+                { label: "Following", value: followingCount },
+                { label: "Cars", value: cars.length },
+              ].map((stat, i) => (
+                <View key={i} style={styles.statCard}>
                   <Text style={styles.statValue}>{stat.value}</Text>
                   <Text style={styles.statLabel}>{stat.label}</Text>
                 </View>
               ))}
             </View>
+
+            {/* Socials */}
+            <View style={styles.socialRow}>
+              {profile.instagram && (
+                <TouchableOpacity onPress={() => openLink(profile.instagram)}>
+                  <Ionicons name="logo-instagram" size={28} color="#ff1f1f" />
+                </TouchableOpacity>
+              )}
+              {profile.tiktok && (
+                <TouchableOpacity onPress={() => openLink(profile.tiktok)}>
+                  <Ionicons name="logo-tiktok" size={26} color="#fff" />
+                </TouchableOpacity>
+              )}
+              {profile.youtube && (
+                <TouchableOpacity onPress={() => openLink(profile.youtube)}>
+                  <Ionicons name="logo-youtube" size={28} color="#ff0000" />
+                </TouchableOpacity>
+              )}
+              {profile.website && (
+                <TouchableOpacity onPress={() => openLink(profile.website)}>
+                  <Ionicons name="globe-outline" size={26} color="#aaa" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Build Showcase */}
+            <CarShowcase
+              title="My Builds"
+              cars={cars}
+              onSelect={(car) => navigation.navigate("CarDetailScreen", { carId: car.id })}
+            />
+
+            {/* Sign Out */}
+            <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </TouchableOpacity>
           </Animated.View>
-        </LinearGradient>
-
-        {/* Content Sections */}
-        <View style={styles.content}>
-          {/* Quick Actions */}
-          <ProfileSection title="Quick Actions">
-            <View style={styles.actionsGrid}>
-              <TouchableOpacity style={styles.actionCard}>
-                <LinearGradient
-                  colors={appColors?.purpleGradient || ["#8b5cf6", "#7c3aed"]}
-                  style={styles.actionGradient}
-                >
-                  <Ionicons
-                    name="settings-outline"
-                    size={24}
-                    color={appColors.textPrimary}
-                  />
-                </LinearGradient>
-                <Text style={styles.actionText}>Settings</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.actionCard}>
-                <LinearGradient
-                  colors={appColors?.blueGradient || ["#06b6d4", "#3b82f6"]}
-                  style={styles.actionGradient}
-                >
-                  <Ionicons
-                    name="notifications-outline"
-                    size={24}
-                    color={appColors.textPrimary}
-                  />
-                </LinearGradient>
-                <Text style={styles.actionText}>Notifications</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.actionCard}>
-                <LinearGradient
-                  colors={appColors?.redGradient || ["#ef4444", "#dc2626"]}
-                  style={styles.actionGradient}
-                >
-                  <Ionicons
-                    name="help-circle-outline"
-                    size={24}
-                    color={appColors.textPrimary}
-                  />
-                </LinearGradient>
-                <Text style={styles.actionText}>Help</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.actionCard}>
-                <LinearGradient
-                  colors={["#10b981", "#059669"]}
-                  style={styles.actionGradient}
-                >
-                  <Ionicons
-                    name="share-outline"
-                    size={24}
-                    color={appColors.textPrimary}
-                  />
-                </LinearGradient>
-                <Text style={styles.actionText}>Share Profile</Text>
-              </TouchableOpacity>
-            </View>
-          </ProfileSection>
-
-          {/* App Info */}
-          <ProfileSection title="About">
-            <View style={styles.aboutContainer}>
-              <Text style={styles.aboutText}>
-                Midnite Auto - The 24/7 Car Meet
-              </Text>
-              <Text style={styles.aboutSubtext}>
-                Version 1.0.0 • Built with ❤️ for car enthusiasts
-              </Text>
-            </View>
-          </ProfileSection>
-
-          {/* Logout */}
-          <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={20} color={appColors.red} />
-            <Text style={styles.logoutText}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+        )}
       </ScrollView>
-    </View>
+
+      {/* Edit Modal */}
+      <Modal visible={editVisible} animationType="slide" onRequestClose={() => setEditVisible(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalContainer}
+        >
+          <Text style={styles.modalTitle}>Edit Profile</Text>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#777" value={fullName} onChangeText={setFullName} />
+            <TextInput style={[styles.input, styles.bioInput]} placeholder="Bio" placeholderTextColor="#777" value={bio} onChangeText={setBio} multiline />
+            <TextInput style={styles.input} placeholder="Instagram" placeholderTextColor="#777" value={instagram} onChangeText={setInstagram} />
+            <TextInput style={styles.input} placeholder="TikTok" placeholderTextColor="#777" value={tiktok} onChangeText={setTiktok} />
+            <TextInput style={styles.input} placeholder="YouTube" placeholderTextColor="#777" value={youtube} onChangeText={setYoutube} />
+            <TextInput style={styles.input} placeholder="Website" placeholderTextColor="#777" value={website} onChangeText={setWebsite} />
+          </ScrollView>
+          <View style={styles.modalButtons}>
+            <TouchableOpacity onPress={() => setEditVisible(false)} style={styles.cancelBtn}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleSaveProfile} style={styles.saveBtn}>
+              <Text style={styles.saveText}>{loading ? "Saving..." : "Save"}</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  scrollContent: { alignItems: "center", paddingBottom: 100 },
+  bannerContainer: { width: "100%", height: 140 },
+  bannerGradient: {
     flex: 1,
-    backgroundColor: appColors.background,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 30,
-  },
-  headerContent: {
+    justifyContent: "flex-end",
     alignItems: "center",
+    paddingBottom: 25,
+    borderBottomWidth: 1,
+    borderBottomColor: "#8B0000",
   },
-  profilePictureContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-    position: "relative",
-  },
-  profilePicture: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    overflow: "hidden",
-    borderWidth: 4,
-    borderColor: appColors.purple,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+  bannerText: { color: "#fff", fontSize: 20, fontWeight: "600", textTransform: "uppercase" },
+  profileContainer: { alignItems: "center", width: "90%", marginTop: 20 },
+  avatarWrapper: { alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  avatarGlow: {
+    position: "absolute",
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "#8B0000",
+    opacity: 0.4,
+    shadowColor: "#ff0000",
+    shadowRadius: 30,
+    shadowOpacity: 0.8,
     elevation: 8,
   },
-  profileImage: {
-    width: "100%",
-    height: "100%",
-  },
-  editPhotoButton: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: appColors.purple,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: appColors.primary,
-  },
-  userInfoContainer: {
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  userName: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: appColors.textPrimary,
-    marginBottom: 4,
-  },
-  userHandle: {
-    fontSize: 18,
-    color: appColors.purple,
-    fontWeight: "500",
-  },
-  bio: {
-    fontSize: 16,
-    color: appColors.textSecondary,
-    lineHeight: 22,
-    textAlign: "center",
-    marginBottom: 24,
-    paddingHorizontal: 20,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-  },
-  statItem: {
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: appColors.textPrimary,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: appColors.textMuted,
-    marginTop: 4,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: appColors.textPrimary,
-    marginBottom: 16,
-  },
-  actionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  actionCard: {
-    width: (width - 60) / 2,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  actionGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  actionText: {
-    fontSize: 12,
-    color: appColors.textMuted,
-    textAlign: "center",
-  },
-  aboutContainer: {
-    backgroundColor: appColors.cardBackground,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: "center",
-  },
-  aboutText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: appColors.textPrimary,
-    marginBottom: 8,
-  },
-  aboutSubtext: {
-    fontSize: 14,
-    color: appColors.textMuted,
-    textAlign: "center",
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: appColors.cardBackground,
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 20,
-  },
-  logoutText: {
-    fontSize: 16,
-    color: appColors.red,
-    marginLeft: 8,
-    fontWeight: "600",
-  },
+  avatar: { width: 130, height: 130, borderRadius: 65, borderWidth: 1.5, borderColor: "#ff1f1f" },
+  name: { color: "#fff", fontSize: 22, fontWeight: "bold", marginTop: 6 },
+  username: { color: "#ff1f1f", fontSize: 14, marginBottom: 8 },
+  bio: { color: "#bbb", fontSize: 13, textAlign: "center", marginBottom: 20, width: width * 0.8 },
+  badgeContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 10 },
+  badgeChip: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, margin: 4, shadowColor: "#ff1f1f", shadowOpacity: 0.6, shadowRadius: 10 },
+  badgeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  actionRow: { flexDirection: "row", justifyContent: "space-around", width: "100%", marginBottom: 25 },
+  actionButton: { alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0a", borderRadius: 50, width: 70, height: 70, borderWidth: 1, borderColor: "#222" },
+  actionGlow: { shadowColor: "#8B0000", shadowRadius: 10, shadowOpacity: 0.5 },
+  actionLabel: { color: "#fff", fontSize: 12, marginTop: 5, fontWeight: "500" },
+  statsContainer: { flexDirection: "row", justifyContent: "space-between", width: "95%", marginBottom: 25, backgroundColor: "#0d0d0d", borderRadius: 12, paddingVertical: 12 },
+  statCard: { alignItems: "center", flex: 1 },
+  statValue: { color: "#fff", fontSize: 17, fontWeight: "bold" },
+  statLabel: { color: "#777", fontSize: 12 },
+  socialRow: { flexDirection: "row", gap: 28, marginBottom: 30 },
+  signOutButton: { marginTop: 15 },
+  signOutText: { color: "#666", fontSize: 14 },
+  modalContainer: { flex: 1, backgroundColor: "#000", padding: 20 },
+  modalTitle: { color: "#fff", fontSize: 22, fontWeight: "bold", marginBottom: 15 },
+  input: { backgroundColor: "#111", color: "#fff", borderRadius: 10, padding: 10, marginBottom: 15, borderWidth: 1, borderColor: "#1c1c1c" },
+  bioInput: { height: 80, textAlignVertical: "top" },
+  modalButtons: { flexDirection: "row", justifyContent: "space-between", marginTop: 15 },
+  cancelBtn: { padding: 10 },
+  cancelText: { color: "#888" },
+  saveBtn: { backgroundColor: "#8B0000", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
+  saveText: { color: "#fff", fontWeight: "bold" },
 });

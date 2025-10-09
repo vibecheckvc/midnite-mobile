@@ -6,9 +6,9 @@ import { colors } from "../constants/colors";
 // Import screens
 import FeedScreen from "../screens/FeedScreen";
 import EventsScreen from "../screens/EventsScreen";
-import MarketplaceScreen from "../screens/MarketplaceScreen";
 import GarageScreen from "../screens/GarageScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import CommunityScreen from "../screens/CommunityScreen"; // ✅ Added
 
 const Tab = createBottomTabNavigator();
 
@@ -23,8 +23,8 @@ export default function MainTabs() {
             iconName = focused ? "home" : "home-outline";
           } else if (route.name === "Events") {
             iconName = focused ? "calendar" : "calendar-outline";
-          } else if (route.name === "Marketplace") {
-            iconName = focused ? "storefront" : "storefront-outline";
+          } else if (route.name === "Community") {
+            iconName = focused ? "people" : "people-outline";
           } else if (route.name === "Garage") {
             iconName = focused ? "car-sport" : "car-sport-outline";
           } else if (route.name === "Profile") {
@@ -76,10 +76,10 @@ export default function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="Marketplace"
-        component={MarketplaceScreen}
+        name="Community"
+        component={CommunityScreen}
         options={{
-          title: "Marketplace",
+          title: "Community",
         }}
       />
       <Tab.Screen

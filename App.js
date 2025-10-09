@@ -11,6 +11,8 @@ import LoadingScreen from "./src/screens/LoadingScreen";
 import AuthScreen from "./src/screens/AuthScreen";
 import MainTabs from "./src/navigation/MainTabs";
 import CarDetailScreen from "./src/screens/CarDetailScreen";
+import DriverProfileScreen from "./src/screens/DriverProfileScreen"; // ✅ Added
+import ChatScreen from "./src/screens/ChatScreen"; // ✅ New import
 
 // Import Supabase + Auth
 import { supabase } from "./src/lib/supabase";
@@ -40,9 +42,9 @@ function AppNavigator() {
               options={{ headerShown: false }}
             />
 
-            {/* ✅ Fixed: inject supabase + user into CarDetailScreen */}
-            <Stack.Screen name="CarDetail" options={{ headerShown: false }}>
-              {props => (
+            {/* ✅ Car detail page */}
+            <Stack.Screen name="CarDetailScreen" options={{ headerShown: false }}>
+              {(props) => (
                 <CarDetailScreen
                   {...props}
                   supabase={supabase}
@@ -50,6 +52,31 @@ function AppNavigator() {
                 />
               )}
             </Stack.Screen>
+
+            {/* ✅ Public driver profile page */}
+            <Stack.Screen
+              name="DriverProfileScreen"
+              component={DriverProfileScreen}
+              options={{
+                headerShown: true,
+                headerTransparent: true,
+                headerTitle: "",
+                headerTintColor: "#fff",
+              }}
+            />
+
+            {/* ✅ Chat screen */}
+            <Stack.Screen
+              name="ChatScreen"
+              component={ChatScreen}
+              options={{
+                headerShown: true,
+                headerTransparent: false,
+                title: "Chat",
+                headerStyle: { backgroundColor: "#0e0e10" },
+                headerTintColor: "#fff",
+              }}
+            />
           </>
         ) : (
           /* Auth flow */

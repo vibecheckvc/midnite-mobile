@@ -123,7 +123,7 @@ export default function GarageScreen() {
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate("CarDetail", { car: item })}
+      onPress={() => navigation.navigate("CarDetailScreen", { car: item })}
       activeOpacity={0.9}
     >
       <LinearGradient
