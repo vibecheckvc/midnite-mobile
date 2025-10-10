@@ -1,42 +1,46 @@
 export const colors = {
-  // Primary colors - Black minimalist theme
+  // Primary colors - Underground street racing theme
   primary: "#000000", // Pure black background
-  secondary: "#111111", // Very dark grey
+  secondary: "#0a0a0a", // Very dark grey
   accent: "#1a1a1a", // Slightly lighter dark grey
 
-  // Accent colors - Red and Purple
-  purple: "#8b5cf6", // Purple gradient
-  purpleDark: "#7c3aed", // Darker purple
-  red: "#ef4444", // Red for buttons and accents
-  green: "#10b981", // Green for success states
-  cyan: "#06b6d4", // Light blue/cyan
+  // Accent colors - Aggressive red and neon
+  purple: "#ff0040", // Bright red for primary actions
+  purpleDark: "#cc0033", // Darker red
+  red: "#ff0040", // Primary red accent
+  green: "#00ff41", // Neon green for success
+  cyan: "#00d4ff", // Neon cyan for info
 
-  // Text colors - White theme
+  // Text colors - High contrast
   textPrimary: "#ffffff", // Pure white text
-  textSecondary: "#e5e5e5", // Light grey text
-  textMuted: "#cccccc", // Muted grey text
+  textSecondary: "#f0f0f0", // Light grey text
+  textMuted: "#888888", // Muted grey text
 
-  // Background colors - Black minimalist
+  // Background colors - Deep blacks with subtle gradients
   background: "#000000", // Pure black background
-  cardBackground: "#111111", // Dark grey card backgrounds
+  cardBackground: "#0d0d0d", // Dark card backgrounds
   inputBackground: "#1a1a1a", // Input backgrounds
 
-  // Status colors
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#3b82f6",
+  // Status colors - Neon theme
+  success: "#00ff41",
+  warning: "#ffaa00",
+  error: "#ff0040",
+  info: "#00d4ff",
 
-  // Gradients - Red and Purple theme
-  purpleGradient: ["#8b5cf6", "#7c3aed"],
-  redGradient: ["#ef4444", "#dc2626"],
-  darkGradient: ["#000000", "#111111"],
-  blueGradient: ["#06b6d4", "#3b82f6"],
+  // Gradients - Underground racing theme
+  purpleGradient: ["#ff0040", "#cc0033"],
+  redGradient: ["#ff0040", "#990026"],
+  darkGradient: ["#000000", "#0a0a0a"],
+  blueGradient: ["#00d4ff", "#0099cc"],
+  neonGradient: ["#00ff41", "#00cc33"],
+  dangerGradient: ["#ff0040", "#990026"],
 };
 
 export const gradients = {
-  purple: ["#8b5cf6", "#7c3aed"],
-  red: ["#ef4444", "#dc2626"],
-  dark: ["#000000", "#111111"],
-  blue: ["#06b6d4", "#3b82f6"],
+  purple: ["#ff0040", "#cc0033"],
+  red: ["#ff0040", "#990026"],
+  dark: ["#000000", "#0a0a0a"],
+  blue: ["#00d4ff", "#0099cc"],
+  neon: ["#00ff41", "#00cc33"],
+  danger: ["#ff0040", "#990026"],
 };

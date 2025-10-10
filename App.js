@@ -30,7 +30,11 @@ function AppNavigator() {
 
   return (
     <NavigationContainer>
-      <StatusBar style="light" backgroundColor="#000000" />
+      <StatusBar
+        style="light"
+        backgroundColor="#000000"
+        barStyle="light-content"
+      />
 
       <Stack.Navigator screenOptions={{ animation: "fade_from_bottom" }}>
         {user ? (
@@ -43,13 +47,12 @@ function AppNavigator() {
             />
 
             {/* ✅ Car detail page */}
-            <Stack.Screen name="CarDetailScreen" options={{ headerShown: false }}>
+            <Stack.Screen
+              name="CarDetailScreen"
+              options={{ headerShown: false }}
+            >
               {(props) => (
-                <CarDetailScreen
-                  {...props}
-                  supabase={supabase}
-                  user={user}
-                />
+                <CarDetailScreen {...props} supabase={supabase} user={user} />
               )}
             </Stack.Screen>
 
@@ -62,6 +65,7 @@ function AppNavigator() {
                 headerTransparent: true,
                 headerTitle: "",
                 headerTintColor: "#fff",
+                headerBackTitle: "Back",
               }}
             />
 
@@ -73,7 +77,7 @@ function AppNavigator() {
                 headerShown: true,
                 headerTransparent: false,
                 title: "Chat",
-                headerStyle: { backgroundColor: "#0e0e10" },
+                headerStyle: { backgroundColor: "#000000" },
                 headerTintColor: "#fff",
               }}
             />

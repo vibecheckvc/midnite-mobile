@@ -10,19 +10,27 @@ import {
   ScrollView,
   Alert,
   Image,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 
-const RED = "#b10f2e";
-const BG = "#0b0b0c";
-const CARD = "rgba(255,255,255,0.04)";
-const BORDER = "rgba(255,255,255,0.08)";
-const TEXT = "#f6f6f7";
-const MUTED = "#a9a9b3";
+const RED = "#ff0040";
+const BG = "#000000";
+const CARD = "rgba(255,255,255,0.05)";
+const BORDER = "rgba(255,0,64,0.3)";
+const TEXT = "#ffffff";
+const MUTED = "#888888";
 const BUCKET = "car-photos";
 
-export default function AddCarModal({ visible, onClose, supabase, user, onAdded }) {
+export default function AddCarModal({
+  visible,
+  onClose,
+  supabase,
+  user,
+  onAdded,
+}) {
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
@@ -54,7 +62,9 @@ export default function AddCarModal({ visible, onClose, supabase, user, onAdded 
         .from(BUCKET)
         .upload(filename, blob, { contentType: "image/jpeg" });
       if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(filename);
+      const { data: pub } = supabase.storage
+        .from(BUCKET)
+        .getPublicUrl(filename);
       return pub?.publicUrl || null;
     } catch (e) {
       console.log("Upload error:", e.message);
@@ -90,7 +100,10 @@ export default function AddCarModal({ visible, onClose, supabase, user, onAdded 
       if (coverUri) {
         coverUrl = await uploadCover(coverUri, insertData.id);
         if (coverUrl) {
-          await supabase.from("cars").update({ cover_url: coverUrl }).eq("id", insertData.id);
+          await supabase
+            .from("cars")
+            .update({ cover_url: coverUrl })
+            .eq("id", insertData.id);
         }
       }
 
@@ -116,8 +129,14 @@ export default function AddCarModal({ visible, onClose, supabase, user, onAdded 
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={styles.modal}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.modal}>
+        <StatusBar barStyle="light-content" backgroundColor={BG} />
         {/* Header */}
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose}>
@@ -135,18 +154,33 @@ export default function AddCarModal({ visible, onClose, supabase, user, onAdded 
         <ScrollView contentContainerStyle={styles.form}>
           <Field label="Make" value={make} onChangeText={setMake} />
           <Field label="Model" value={model} onChangeText={setModel} />
-          <Field label="Year" value={year} onChangeText={setYear} keyboardType="numeric" />
+          <Field
+            label="Year"
+            value={year}
+            onChangeText={setYear}
+            keyboardType="numeric"
+          />
           <Field label="Trim" value={trim} onChangeText={setTrim} />
-          <Field label="Mileage" value={mileage} onChangeText={setMileage} keyboardType="numeric" />
+          <Field
+            label="Mileage"
+            value={mileage}
+            onChangeText={setMileage}
+            keyboardType="numeric"
+          />
 
           <View style={{ marginTop: 16 }}>
             <Text style={{ color: MUTED, marginBottom: 8 }}>Cover Photo</Text>
             {coverUri ? (
               <TouchableOpacity onPress={pickImage} style={styles.coverPreview}>
-                <Image source={{ uri: coverUri }} style={{ width: "100%", height: 180, borderRadius: 12 }} />
+                <Image
+                  source={{ uri: coverUri }}
+                  style={{ width: "100%", height: 180, borderRadius: 12 }}
+                />
                 <View style={styles.changeOverlay}>
                   <Ionicons name="refresh-outline" size={22} color="#fff" />
-                  <Text style={{ color: "#fff", marginTop: 4, fontSize: 12 }}>Change</Text>
+                  <Text style={{ color: "#fff", marginTop: 4, fontSize: 12 }}>
+                    Change
+                  </Text>
                 </View>
               </TouchableOpacity>
             ) : (
@@ -157,7 +191,7 @@ export default function AddCarModal({ visible, onClose, supabase, user, onAdded 
             )}
           </View>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

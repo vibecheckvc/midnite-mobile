@@ -324,7 +324,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     marginBottom: 20,
-    shadowColor: "#000",
+    borderWidth: 1,
+    borderColor: colors.accent,
+    shadowColor: colors.red,
     shadowOffset: {
       width: 0,
       height: 4,
@@ -355,7 +357,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "transparent",
+    borderColor: colors.accent,
   },
   input: {
     flex: 1,
@@ -374,7 +376,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
-    shadowColor: colors.purple,
+    shadowColor: colors.red,
     shadowOffset: {
       width: 0,
       height: 4,

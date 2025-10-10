@@ -13,7 +13,11 @@ import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
-export default function CarShowcase({ cars, onSelect, title = "Build Showcase" }) {
+export default function CarShowcase({
+  cars,
+  onSelect,
+  title = "Build Showcase",
+}) {
   if (!cars || cars.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -38,10 +42,7 @@ export default function CarShowcase({ cars, onSelect, title = "Build Showcase" }
             style={styles.cardWrapper}
             onPress={() => onSelect?.(item)}
           >
-            <LinearGradient
-              colors={["#0d0d0d", "#1a0000"]}
-              style={styles.card}
-            >
+            <LinearGradient colors={["#0d0d0d", "#0a0000"]} style={styles.card}>
               <Image
                 source={{ uri: item.cover_url }}
                 style={styles.image}
@@ -84,7 +85,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#330000",
+    borderColor: "rgba(255,0,64,0.3)",
+    shadowColor: "#ff0040",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
   },
   image: {
     width: "100%",

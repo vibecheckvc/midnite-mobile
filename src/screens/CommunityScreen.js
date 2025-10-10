@@ -36,7 +36,9 @@ export default function CommunityScreen({ navigation }) {
       if (p.scope !== "following") return;
       if (p.eventType === "INSERT") {
         setFollowing((prev) =>
-          prev.includes(p.new.following_id) ? prev : [...prev, p.new.following_id]
+          prev.includes(p.new.following_id)
+            ? prev
+            : [...prev, p.new.following_id]
         );
       } else if (p.eventType === "DELETE") {
         setFollowing((prev) => prev.filter((id) => id !== p.old.following_id));
@@ -82,7 +84,10 @@ export default function CommunityScreen({ navigation }) {
       );
 
       if (currently) {
-        const { error } = await communityService.unfollowUser(user.id, targetId);
+        const { error } = await communityService.unfollowUser(
+          user.id,
+          targetId
+        );
         if (error) throw error;
       } else {
         const { error } = await communityService.followUser(user.id, targetId);
@@ -101,7 +106,9 @@ export default function CommunityScreen({ navigation }) {
       <TouchableOpacity
         style={styles.userCard}
         activeOpacity={0.85}
-        onPress={() => navigation.navigate("DriverProfileScreen", { userId: item.id })}
+        onPress={() =>
+          navigation.navigate("DriverProfileScreen", { userId: item.id })
+        }
       >
         {item.avatar_url ? (
           <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
@@ -113,7 +120,9 @@ export default function CommunityScreen({ navigation }) {
 
         <View style={{ flex: 1 }}>
           <Text style={styles.username}>{item.username || "User"}</Text>
-          {item.full_name && <Text style={styles.fullName}>{item.full_name}</Text>}
+          {item.full_name && (
+            <Text style={styles.fullName}>{item.full_name}</Text>
+          )}
         </View>
 
         <TouchableOpacity
@@ -121,9 +130,14 @@ export default function CommunityScreen({ navigation }) {
             e.stopPropagation(); // don’t trigger profile nav
             toggleFollow(item.id);
           }}
-          style={[styles.followBtn, isFollowing && { backgroundColor: colors.purple }]}
+          style={[
+            styles.followBtn,
+            isFollowing && { backgroundColor: colors.purple },
+          ]}
         >
-          <Text style={styles.followText}>{isFollowing ? "Following" : "Follow"}</Text>
+          <Text style={styles.followText}>
+            {isFollowing ? "Following" : "Follow"}
+          </Text>
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -132,15 +146,11 @@ export default function CommunityScreen({ navigation }) {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
       showsVerticalScrollIndicator={false}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Community</Text>
-        <Ionicons name="people-outline" size={26} color={colors.textPrimary} />
-      </View>
-
       {/* Following (avatars row) */}
       {following.length > 0 && (
         <>
@@ -152,12 +162,22 @@ export default function CommunityScreen({ navigation }) {
               .map((p) => (
                 <TouchableOpacity
                   key={p.id}
-                  onPress={() => navigation.navigate("DriverProfileScreen", { userId: p.id })}
+                  onPress={() =>
+                    navigation.navigate("DriverProfileScreen", { userId: p.id })
+                  }
                 >
                   {p.avatar_url ? (
-                    <Image source={{ uri: p.avatar_url }} style={styles.followingAvatar} />
+                    <Image
+                      source={{ uri: p.avatar_url }}
+                      style={styles.followingAvatar}
+                    />
                   ) : (
-                    <View style={[styles.followingAvatar, styles.followingAvatarPlaceholder]}>
+                    <View
+                      style={[
+                        styles.followingAvatar,
+                        styles.followingAvatarPlaceholder,
+                      ]}
+                    >
                       <Text>🚗</Text>
                     </View>
                   )}
@@ -182,12 +202,16 @@ export default function CommunityScreen({ navigation }) {
         <Ionicons name="chatbubbles-outline" size={38} color="#fff" />
         <Text style={styles.comingTitle}>Groups & Forums Coming Soon</Text>
         <Text style={styles.comingText}>
-          Join clubs, meet crews, and share knowledge with other builders and drivers.
+          Join clubs, meet crews, and share knowledge with other builders and
+          drivers.
         </Text>
       </LinearGradient>
 
       <Text style={styles.sectionTitle}>Direct Chat</Text>
-      <LinearGradient colors={colors.redGradient || ["#A00000", "#600000"]} style={styles.comingBox}>
+      <LinearGradient
+        colors={colors.redGradient || ["#A00000", "#600000"]}
+        style={styles.comingBox}
+      >
         <Ionicons name="chatbox-ellipses-outline" size={38} color="#fff" />
         <Text style={styles.comingTitle}>Direct Messaging Coming Soon</Text>
         <Text style={styles.comingText}>
@@ -223,9 +247,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: colors.cardBackground,
     marginHorizontal: 16,
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    shadowColor: colors.red,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 12 },
   avatarPlaceholder: {
@@ -240,10 +274,20 @@ const styles = StyleSheet.create({
   username: { color: colors.textPrimary, fontWeight: "600", fontSize: 15 },
   fullName: { color: colors.textSecondary, fontSize: 12 },
   followBtn: {
-    backgroundColor: colors.purpleGradient[0],
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    backgroundColor: colors.red,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.red,
+    shadowColor: colors.red,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   followText: { color: "#fff", fontWeight: "600", fontSize: 13 },
   comingBox: {
@@ -255,7 +299,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   comingTitle: { color: "#fff", fontSize: 18, fontWeight: "700", marginTop: 8 },
-  comingText: { color: "#eee", fontSize: 13, marginTop: 6, textAlign: "center", lineHeight: 18 },
+  comingText: {
+    color: "#eee",
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: "center",
+    lineHeight: 18,
+  },
   followingRow: {
     flexDirection: "row",
     gap: 12,

@@ -37,11 +37,19 @@ export default function MainTabs() {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.cardBackground,
-          borderTopColor: colors.accent,
-          borderTopWidth: 1,
-          height: 60,
+          borderTopColor: colors.red,
+          borderTopWidth: 2,
+          height: 65,
           paddingBottom: 8,
           paddingTop: 8,
+          shadowColor: colors.red,
+          shadowOffset: {
+            width: 0,
+            height: -2,
+          },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+          elevation: 8,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -50,8 +58,16 @@ export default function MainTabs() {
         },
         headerStyle: {
           backgroundColor: colors.primary,
-          borderBottomColor: colors.accent,
-          borderBottomWidth: 1,
+          borderBottomColor: colors.red,
+          borderBottomWidth: 2,
+          shadowColor: colors.red,
+          shadowOffset: {
+            width: 0,
+            height: 2,
+          },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+          elevation: 8,
         },
         headerTintColor: colors.textPrimary,
         headerTitleStyle: {

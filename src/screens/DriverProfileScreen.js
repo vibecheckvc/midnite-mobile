@@ -176,7 +176,10 @@ export default function DriverProfileScreen({ route, navigation }) {
   }
 
   return (
-    <LinearGradient colors={["#000", "#0a0a0a", "#000"]} style={styles.container}>
+    <LinearGradient
+      colors={["#000", "#0a0a0a", "#000"]}
+      style={styles.container}
+    >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -195,13 +198,18 @@ export default function DriverProfileScreen({ route, navigation }) {
             />
           </View>
 
-          <Text style={styles.name}>{profile.full_name || "Unnamed Racer"}</Text>
+          <Text style={styles.name}>
+            {profile.full_name || "Unnamed Racer"}
+          </Text>
           <Text style={styles.username}>@{profile.username || "user"}</Text>
 
           <View style={styles.actionRow}>
             {currentUserId !== userId && (
               <TouchableOpacity
-                style={[styles.followBtn, isFollowing && { backgroundColor: "#222" }]}
+                style={[
+                  styles.followBtn,
+                  isFollowing && { backgroundColor: "#222" },
+                ]}
                 onPress={handleFollowToggle}
               >
                 <Ionicons
@@ -217,7 +225,9 @@ export default function DriverProfileScreen({ route, navigation }) {
 
             <TouchableOpacity
               style={styles.dmBtn}
-              onPress={() => {/* keep DM modal for later */}}
+              onPress={() => {
+                /* keep DM modal for later */
+              }}
             >
               <Ionicons name="chatbubble-outline" size={20} color="#fff" />
             </TouchableOpacity>
@@ -239,7 +249,11 @@ export default function DriverProfileScreen({ route, navigation }) {
           {profile.badges && profile.badges.length > 0 && (
             <View style={styles.badgeContainer}>
               {profile.badges.map((b, i) => (
-                <LinearGradient key={i} colors={["#8B0000", "#320000"]} style={styles.badgeChip}>
+                <LinearGradient
+                  key={i}
+                  colors={["#8B0000", "#320000"]}
+                  style={styles.badgeChip}
+                >
                   <Text style={styles.badgeText}>{b}</Text>
                 </LinearGradient>
               ))}
@@ -279,7 +293,9 @@ export default function DriverProfileScreen({ route, navigation }) {
         <CarShowcase
           title="Public Builds"
           cars={cars}
-          onSelect={(car) => navigation.navigate("CarDetailScreen", { carId: car.id })}
+          onSelect={(car) =>
+            navigation.navigate("CarDetailScreen", { carId: car.id })
+          }
         />
 
         <View style={{ height: 60 }} />
@@ -291,26 +307,36 @@ export default function DriverProfileScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  scrollContent: { alignItems: "center", paddingBottom: 80 },
-  header: { alignItems: "center", marginTop: 30 },
+  scrollContent: { alignItems: "center", paddingBottom: 80, paddingTop: 60 },
+  header: { alignItems: "center", marginTop: 20 },
   avatarWrapper: { marginBottom: 10 },
   avatar: {
     width: 110,
     height: 110,
     borderRadius: 55,
-    borderWidth: 1.5,
-    borderColor: "#8B0000",
+    borderWidth: 2,
+    borderColor: "#ff0040",
   },
   name: { color: "#fff", fontSize: 20, fontWeight: "bold" },
-  username: { color: "#ff1f1f", fontSize: 13, marginBottom: 10 },
+  username: { color: "#ff0040", fontSize: 13, marginBottom: 10 },
   actionRow: { flexDirection: "row", gap: 10, marginBottom: 12 },
   followBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#8B0000",
-    paddingHorizontal: 18,
-    paddingVertical: 6,
-    borderRadius: 10,
+    backgroundColor: "#ff0040",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#ff0040",
+    shadowColor: "#ff0040",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   followText: { color: "#fff", fontSize: 13, marginLeft: 5 },
   dmBtn: {
@@ -339,9 +365,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 15,
   },
-  badgeChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, margin: 3 },
+  badgeChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    margin: 3,
+  },
   badgeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  bioSection: { backgroundColor: "#0d0d0d", borderRadius: 10, padding: 12, marginTop: 10, width: "90%" },
+  bioSection: {
+    backgroundColor: "#0d0d0d",
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 10,
+    width: "90%",
+  },
   bio: { color: "#bbb", fontSize: 13, textAlign: "center" },
   socialRow: { flexDirection: "row", gap: 20, marginTop: 20 },
 });

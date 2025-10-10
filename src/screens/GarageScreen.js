@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -16,26 +22,32 @@ import {
   Dimensions,
   SafeAreaView,
   ActivityIndicator,
+  StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
-import { deleteRow, pickAndUploadPhoto, withUser, toLocalISODate } from "../utils/supabaseHelpers";
+import {
+  deleteRow,
+  pickAndUploadPhoto,
+  withUser,
+  toLocalISODate,
+} from "../utils/supabaseHelpers";
 
 /* =================== THEME: Blackout Red v2.5 =================== */
 const { width } = Dimensions.get("window");
 const theme = {
   bgA: "#000000",
-  bgB: "#0a0a0b",
+  bgB: "#0a0a0a",
   text: "#ffffff",
-  muted: "#8b8b90",
-  red: "#ff002f",
-  redDark: "#7a0018",
-  edge: "rgba(255,0,76,0.25)",
-  glass: "rgba(255,255,255,0.04)",
-  glassStrong: "rgba(255,255,255,0.07)",
+  muted: "#888888",
+  red: "#ff0040",
+  redDark: "#990026",
+  edge: "rgba(255,0,64,0.3)",
+  glass: "rgba(255,255,255,0.05)",
+  glassStrong: "rgba(255,255,255,0.08)",
 };
 
 /* =================== SCREEN =================== */
@@ -55,10 +67,22 @@ export default function GarageScreen() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(introFade, { toValue: 1, duration: 650, useNativeDriver: false }),
-      Animated.timing(introTranslate, { toValue: 0, duration: 650, useNativeDriver: false }),
+      Animated.timing(introFade, {
+        toValue: 1,
+        duration: 650,
+        useNativeDriver: false,
+      }),
+      Animated.timing(introTranslate, {
+        toValue: 0,
+        duration: 650,
+        useNativeDriver: false,
+      }),
     ]).start(() => {
-      Animated.timing(fadeIn, { toValue: 1, duration: 650, useNativeDriver: false }).start();
+      Animated.timing(fadeIn, {
+        toValue: 1,
+        duration: 650,
+        useNativeDriver: false,
+      }).start();
     });
   }, []);
 
@@ -67,7 +91,9 @@ export default function GarageScreen() {
     setLoading(true);
     const { data, error } = await supabase
       .from("cars")
-      .select("id, make, model, year, mileage, cover_url, is_public, created_at")
+      .select(
+        "id, make, model, year, mileage, cover_url, is_public, created_at"
+      )
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -154,7 +180,10 @@ export default function GarageScreen() {
           </Text>
 
           <View style={styles.cardActions}>
-            <TouchableOpacity onPress={() => togglePublic(item)} style={styles.iconButton}>
+            <TouchableOpacity
+              onPress={() => togglePublic(item)}
+              style={styles.iconButton}
+            >
               <Ionicons
                 name={item.is_public ? "earth" : "lock-closed"}
                 size={18}
@@ -170,7 +199,10 @@ export default function GarageScreen() {
             >
               <Ionicons name="create-outline" size={18} color={theme.text} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => confirmDelete(item)} style={styles.iconButton}>
+            <TouchableOpacity
+              onPress={() => confirmDelete(item)}
+              style={styles.iconButton}
+            >
               <Ionicons name="trash-outline" size={18} color={theme.red} />
             </TouchableOpacity>
           </View>
@@ -181,7 +213,10 @@ export default function GarageScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <LinearGradient colors={[theme.bgA, theme.bgB]} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={[theme.bgA, theme.bgB]}
+        style={StyleSheet.absoluteFill}
+      />
 
       {/* Intro Animation */}
       <Animated.View
@@ -194,7 +229,9 @@ export default function GarageScreen() {
           {(() => {
             try {
               const src = require("../screens/midnte.png");
-              return <Image source={src} style={styles.logo} resizeMode="contain" />;
+              return (
+                <Image source={src} style={styles.logo} resizeMode="contain" />
+              );
             } catch {
               return (
                 <View style={[styles.logo, styles.logoFallback]}>
@@ -236,7 +273,9 @@ export default function GarageScreen() {
         {cars.length === 0 && !loading && (
           <View style={styles.helperWrap}>
             <Ionicons name="sparkles-outline" size={16} color={theme.muted} />
-            <Text style={styles.helperText}>Tap the + to add your first build.</Text>
+            <Text style={styles.helperText}>
+              Tap the + to add your first build.
+            </Text>
           </View>
         )}
 
@@ -260,7 +299,9 @@ export default function GarageScreen() {
               <View style={styles.emptyWrap}>
                 <Ionicons name="car-sport" size={50} color={theme.muted} />
                 <Text style={styles.emptyText}>No builds yet.</Text>
-                <Text style={styles.emptySub}>Start by adding your first car.</Text>
+                <Text style={styles.emptySub}>
+                  Start by adding your first car.
+                </Text>
               </View>
             }
           />
@@ -281,7 +322,9 @@ export default function GarageScreen() {
             setEditingCar(null);
             setCars((prev) => {
               const exists = prev.find((c) => c.id === saved.id);
-              return exists ? prev.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...prev];
+              return exists
+                ? prev.map((c) => (c.id === saved.id ? saved : c))
+                : [saved, ...prev];
             });
           }}
         />
@@ -293,7 +336,9 @@ export default function GarageScreen() {
 /* =================== MODAL =================== */
 const CarModal = ({ visible, onClose, user, initialCar, onSaved }) => {
   const isEdit = !!initialCar;
-  const [year, setYear] = useState(initialCar?.year ? String(initialCar.year) : "");
+  const [year, setYear] = useState(
+    initialCar?.year ? String(initialCar.year) : ""
+  );
   const [make, setMake] = useState(initialCar?.make ?? "");
   const [model, setModel] = useState(initialCar?.model ?? "");
   const [mileage, setMileage] = useState(
@@ -304,7 +349,10 @@ const CarModal = ({ visible, onClose, user, initialCar, onSaved }) => {
 
   const pickCover = async () => {
     try {
-      const { uri } = await pickAndUploadPhoto(supabase, initialCar?.id || "temp");
+      const { uri } = await pickAndUploadPhoto(
+        supabase,
+        initialCar?.id || "temp"
+      );
       if (uri) setCoverUrl(uri);
     } catch {
       Alert.alert("Error", "Failed to pick or upload photo.");
@@ -348,7 +396,11 @@ const CarModal = ({ visible, onClose, user, initialCar, onSaved }) => {
         if (error) throw error;
         car = data;
       } else {
-        const { data, error } = await supabase.from("cars").insert(payload).select().single();
+        const { data, error } = await supabase
+          .from("cars")
+          .insert(payload)
+          .select()
+          .single();
         if (error) throw error;
         car = data;
       }
@@ -362,51 +414,65 @@ const CarModal = ({ visible, onClose, user, initialCar, onSaved }) => {
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.modalWrap}
-      >
-        <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={styles.cancel}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>{isEdit ? "Edit Build" : "Add Build"}</Text>
-          <TouchableOpacity onPress={save} disabled={saving}>
-            <Text style={[styles.save, saving && { opacity: 0.6 }]}>
-              {saving ? "Saving..." : "Save"}
+      <SafeAreaView style={styles.modalWrap}>
+        <StatusBar barStyle="light-content" backgroundColor={theme.bgA} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalContent}
+        >
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={styles.cancel}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>
+              {isEdit ? "Edit Build" : "Add Build"}
             </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity onPress={save} disabled={saving}>
+              <Text style={[styles.save, saving && { opacity: 0.6 }]}>
+                {saving ? "Saving..." : "Save"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.modalContent}>
-          <TouchableOpacity onPress={pickCover} style={styles.coverPicker} activeOpacity={0.8}>
-            {coverUrl ? (
-              <Image source={{ uri: coverUrl }} style={styles.coverImg} />
-            ) : (
-              <LinearGradient
-                colors={[theme.redDark, "rgba(255,0,47,0.35)"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.coverPlaceholder}
-              >
-                <Ionicons name="image-outline" size={22} color={theme.text} />
-                <Text style={styles.noCoverText}>Upload Cover</Text>
-              </LinearGradient>
-            )}
-          </TouchableOpacity>
+          <View style={styles.modalBody}>
+            <TouchableOpacity
+              onPress={pickCover}
+              style={styles.coverPicker}
+              activeOpacity={0.8}
+            >
+              {coverUrl ? (
+                <Image source={{ uri: coverUrl }} style={styles.coverImg} />
+              ) : (
+                <LinearGradient
+                  colors={[theme.redDark, "rgba(255,0,47,0.35)"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.coverPlaceholder}
+                >
+                  <Ionicons name="image-outline" size={22} color={theme.text} />
+                  <Text style={styles.noCoverText}>Upload Cover</Text>
+                </LinearGradient>
+              )}
+            </TouchableOpacity>
 
-          <LabeledInput label="Year" value={year} onChangeText={setYear} keyboardType="number-pad" />
-          <LabeledInput label="Make" value={make} onChangeText={setMake} />
-          <LabeledInput label="Model" value={model} onChangeText={setModel} />
-          <LabeledInput
-            label="Mileage (km)"
-            value={mileage}
-            onChangeText={setMileage}
-            keyboardType="number-pad"
-            placeholder="Optional"
-          />
-        </View>
-      </KeyboardAvoidingView>
+            <LabeledInput
+              label="Year"
+              value={year}
+              onChangeText={setYear}
+              keyboardType="number-pad"
+            />
+            <LabeledInput label="Make" value={make} onChangeText={setMake} />
+            <LabeledInput label="Model" value={model} onChangeText={setModel} />
+            <LabeledInput
+              label="Mileage (km)"
+              value={mileage}
+              onChangeText={setMileage}
+              keyboardType="number-pad"
+              placeholder="Optional"
+            />
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -415,7 +481,11 @@ const CarModal = ({ visible, onClose, user, initialCar, onSaved }) => {
 const LabeledInput = ({ label, ...props }) => (
   <View style={{ marginBottom: 14 }}>
     <Text style={styles.inputLabel}>{label}</Text>
-    <TextInput style={styles.input} placeholderTextColor={theme.muted} {...props} />
+    <TextInput
+      style={styles.input}
+      placeholderTextColor={theme.muted}
+      {...props}
+    />
   </View>
 );
 
@@ -440,7 +510,12 @@ const styles = StyleSheet.create({
   },
   logo: { width: 80, height: 30, tintColor: theme.red },
   logoFallback: { backgroundColor: "transparent" },
-  introText: { color: theme.text, fontSize: 20, fontWeight: "900", marginTop: 10 },
+  introText: {
+    color: theme.text,
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: 10,
+  },
   introSub: { color: theme.muted, fontSize: 13, marginTop: 4 },
   container: { flex: 1 },
   header: {
@@ -451,7 +526,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   headerTitle: { fontSize: 22, color: theme.text, fontWeight: "900" },
-  statsRow: { flexDirection: "row", justifyContent: "center", paddingHorizontal: 16, marginBottom: 8 },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
   statCard: {
     width: width - 32,
     borderRadius: 16,
@@ -462,10 +542,28 @@ const styles = StyleSheet.create({
     backgroundColor: theme.glass,
   },
   statValue: { fontSize: 20, color: theme.text, fontWeight: "900" },
-  statLabel: { color: theme.muted, fontSize: 12, marginTop: 2, letterSpacing: 0.5 },
-  helperWrap: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 18, marginTop: 8 },
+  statLabel: {
+    color: theme.muted,
+    fontSize: 12,
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  helperWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 18,
+    marginTop: 8,
+  },
   helperText: { color: theme.muted, fontSize: 12 },
-  card: { marginVertical: 10, borderRadius: 18, overflow: "hidden", borderWidth: 1, borderColor: theme.edge, backgroundColor: theme.glass },
+  card: {
+    marginVertical: 10,
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: theme.edge,
+    backgroundColor: theme.glass,
+  },
   cardInner: { padding: 12 },
   noCover: {
     height: 140,
@@ -491,9 +589,15 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   emptyWrap: { alignItems: "center", marginTop: 80 },
-  emptyText: { color: theme.text, fontSize: 18, fontWeight: "900", marginTop: 10 },
+  emptyText: {
+    color: theme.text,
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: 10,
+  },
   emptySub: { color: theme.muted, fontSize: 13, marginTop: 4 },
   modalWrap: { flex: 1, backgroundColor: theme.bgA },
+  modalContent: { flex: 1 },
   modalHeader: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -504,10 +608,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  modalBody: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
   modalTitle: { color: theme.text, fontSize: 18, fontWeight: "900" },
   cancel: { color: theme.muted, fontWeight: "700", fontSize: 15 },
   save: { color: theme.red, fontWeight: "900", fontSize: 15 },
-  modalContent: { paddingHorizontal: 16, paddingTop: 16 },
   coverPicker: {
     height: 150,
     borderRadius: 12,
@@ -517,7 +625,12 @@ const styles = StyleSheet.create({
     borderColor: theme.edge,
     backgroundColor: theme.glassStrong,
   },
-  coverPlaceholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
+  coverPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
   inputLabel: { color: theme.muted, fontSize: 12, marginBottom: 6 },
   input: {
     backgroundColor: theme.glass,

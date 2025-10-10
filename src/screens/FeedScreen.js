@@ -92,8 +92,7 @@ export default function FeedScreen({ navigation }) {
         ? {
             ...p,
             isJoined: !p.isJoined,
-            attendeesCount:
-              (p.attendeesCount || 0) + (p.isJoined ? -1 : 1),
+            attendeesCount: (p.attendeesCount || 0) + (p.isJoined ? -1 : 1),
           }
         : p
     );
@@ -143,8 +142,9 @@ export default function FeedScreen({ navigation }) {
               source={{
                 uri:
                   item.user?.avatar_url ||
-                  `https://ui-avatars.com/api/?name=${item.user?.username ||
-                    "U"}&background=000&color=fff`,
+                  `https://ui-avatars.com/api/?name=${
+                    item.user?.username || "U"
+                  }&background=000&color=fff`,
               }}
               style={styles.avatar}
             />
@@ -163,9 +163,7 @@ export default function FeedScreen({ navigation }) {
 
       {/* Content */}
       <Text style={styles.postContent}>{item.title}</Text>
-      {item.subtitle && (
-        <Text style={styles.postSub}>{item.subtitle}</Text>
-      )}
+      {item.subtitle && <Text style={styles.postSub}>{item.subtitle}</Text>}
 
       {/* Media */}
       {item.cover && (
@@ -194,10 +192,7 @@ export default function FeedScreen({ navigation }) {
             color={item.isLiked ? colors.red : colors.textMuted}
           />
           <Text
-            style={[
-              styles.actionText,
-              item.isLiked && { color: colors.red },
-            ]}
+            style={[styles.actionText, item.isLiked && { color: colors.red }]}
           >
             {item.likesCount || 0}
           </Text>
@@ -220,9 +215,7 @@ export default function FeedScreen({ navigation }) {
             style={styles.actionButton}
           >
             <Ionicons
-              name={
-                item.isJoined ? "calendar" : "calendar-outline"
-              }
+              name={item.isJoined ? "calendar" : "calendar-outline"}
               size={20}
               color={item.isJoined ? colors.purple : colors.textMuted}
             />
@@ -269,45 +262,34 @@ export default function FeedScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Feed</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity>
-            <Ionicons name="search" size={22} color={colors.purple} />
-          </TouchableOpacity>
-          <TouchableOpacity style={{ marginLeft: 12 }}>
-            <Ionicons name="add-circle" size={22} color={colors.red} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
       {/* Filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            onPress={() => setSelectedFilter(filter)}
-            style={[
-              styles.filterButton,
-              selectedFilter === filter && styles.filterActive,
-            ]}
-          >
-            <Text
+      <View style={styles.filterContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {filters.map((filter) => (
+            <TouchableOpacity
+              key={filter}
+              onPress={() => setSelectedFilter(filter)}
               style={[
-                styles.filterText,
-                selectedFilter === filter && styles.filterTextActive,
+                styles.filterButton,
+                selectedFilter === filter && styles.filterActive,
               ]}
             >
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Text
+                style={[
+                  styles.filterText,
+                  selectedFilter === filter && styles.filterTextActive,
+                ]}
+              >
+                {filter}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Feed */}
       <FlatList
@@ -317,8 +299,19 @@ export default function FeedScreen({ navigation }) {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 0,
+          paddingBottom: 16,
+        }}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={{ paddingTop: 40, alignItems: "center" }}>
+            <Text style={{ color: colors.textMuted, fontSize: 14 }}>
+              No posts yet. Pull to refresh.
+            </Text>
+          </View>
+        }
       />
     </View>
   );
@@ -332,58 +325,104 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.red,
+    backgroundColor: colors.cardBackground,
+    shadowColor: colors.red,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
   },
   headerTitle: { color: colors.textPrimary, fontSize: 22, fontWeight: "700" },
   headerActions: { flexDirection: "row" },
-  filterRow: { paddingHorizontal: 16, paddingVertical: 10 },
-  filterButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-    backgroundColor: colors.cardBackground,
+  filterContainer: {
+    backgroundColor: colors.background,
   },
-  filterActive: { backgroundColor: colors.purple },
-  filterText: { color: colors.textMuted, fontSize: 13 },
+  filterRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  filterButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: colors.accent,
+    minHeight: 32,
+    maxHeight: 32,
+  },
+  filterActive: {
+    backgroundColor: colors.red,
+    borderColor: colors.red,
+  },
+  filterText: { color: colors.textMuted, fontSize: 13, fontWeight: "500" },
   filterTextActive: { color: colors.textPrimary },
   postCard: {
     backgroundColor: colors.cardBackground,
     borderRadius: 14,
-    padding: 14,
-    marginBottom: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,0,64,0.2)",
+    shadowColor: colors.red,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 5,
   },
   postHeader: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   userInfo: { flexDirection: "row", flex: 1, alignItems: "center" },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   username: { color: colors.textPrimary, fontWeight: "700", fontSize: 15 },
   userHandle: { color: colors.textSecondary, fontSize: 12 },
   postTypeIcon: { fontSize: 20 },
-  postContent: { color: colors.textPrimary, fontSize: 15, marginBottom: 4 },
-  postSub: { color: colors.textSecondary, fontSize: 13, marginBottom: 10 },
+  postContent: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  postSub: { color: colors.textSecondary, fontSize: 13, marginBottom: 8 },
   cover: {
     width: "100%",
-    height: width * 0.5,
-    borderRadius: 10,
-    marginBottom: 10,
+    height: width * 0.55,
+    borderRadius: 12,
+    marginBottom: 8,
+    marginTop: 4,
   },
   postActions: {
     flexDirection: "row",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: colors.accent,
+    borderTopColor: "rgba(255,255,255,0.05)",
     paddingTop: 10,
+    marginTop: 6,
   },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 18,
+    marginRight: 20,
   },
-  actionText: { color: colors.textMuted, fontSize: 13, marginLeft: 6 },
+  actionText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    marginLeft: 5,
+    fontWeight: "500",
+  },
 });

@@ -303,17 +303,6 @@ export default function EventsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Events</Text>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Ionicons name="add-circle" size={24} color={colors.red} />
-        </TouchableOpacity>
-      </View>
-
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
         <ScrollView
@@ -527,8 +516,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: colors.cardBackground,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.red,
+    shadowColor: colors.red,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
   },
   headerTitle: {
     fontSize: 24,
@@ -546,22 +543,41 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.accent,
+    shadowColor: colors.red,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 4,
   },
   filterContent: {
     paddingHorizontal: 16,
   },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 12,
-    backgroundColor: colors.inputBackground,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    marginRight: 6,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   activeFilterButton: {
-    backgroundColor: colors.purple,
+    backgroundColor: colors.red,
+    borderColor: colors.red,
+    shadowColor: colors.red,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 11,
     color: colors.textMuted,
     fontWeight: "500",
   },
@@ -573,17 +589,19 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     backgroundColor: colors.cardBackground,
-    borderRadius: 16,
+    borderRadius: 18,
     marginBottom: 16,
     overflow: "hidden",
-    shadowColor: "#000",
+    borderWidth: 1,
+    borderColor: colors.accent,
+    shadowColor: colors.red,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
   },
   eventHeader: {
     flexDirection: "row",

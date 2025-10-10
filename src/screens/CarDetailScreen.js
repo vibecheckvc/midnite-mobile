@@ -20,11 +20,11 @@ import PhotosTab from "../components/carTabs/PhotosTab";
 import TasksTab from "../components/carTabs/TasksTab";
 import TimelineTab from "../components/carTabs/TimelineTab";
 
-const RED = "#b10f2e",
-  BG = "#0b0b0c",
-  BORDER = "rgba(255,255,255,0.08)",
-  TEXT = "#f6f6f7",
-  MUTED = "#a9a9b3";
+const RED = "#ff0040",
+  BG = "#000000",
+  BORDER = "rgba(255,0,64,0.3)",
+  TEXT = "#ffffff",
+  MUTED = "#888888";
 
 export default function CarDetailScreen({ route, navigation }) {
   const { car: passedCar, carId: passedCarId } = route.params || {};
@@ -80,7 +80,10 @@ export default function CarDetailScreen({ route, navigation }) {
   if (loading) {
     return (
       <View
-        style={[styles.container, { justifyContent: "center", alignItems: "center" }]}
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
       >
         <ActivityIndicator size="large" color={RED} />
       </View>
@@ -90,7 +93,10 @@ export default function CarDetailScreen({ route, navigation }) {
   if (!car) {
     return (
       <View
-        style={[styles.container, { justifyContent: "center", alignItems: "center" }]}
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
       >
         <Text style={{ color: TEXT }}>Car not found.</Text>
       </View>
@@ -105,7 +111,8 @@ export default function CarDetailScreen({ route, navigation }) {
           <Ionicons name="arrow-back-outline" size={22} color={TEXT} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {car?.make} {car?.model} <Text style={{ color: RED }}>•</Text> {car?.year}
+          {car?.make} {car?.model} <Text style={{ color: RED }}>•</Text>{" "}
+          {car?.year}
         </Text>
         <View style={{ width: 22 }} />
       </View>
@@ -169,10 +176,18 @@ const styles = StyleSheet.create({
   },
   headerTitle: { color: TEXT, fontWeight: "800", fontSize: 16 },
   tabBar: {
-    borderTopWidth: 1,
+    borderTopWidth: 2,
     borderBottomWidth: 1,
-    borderColor: BORDER,
-    backgroundColor: "rgba(255,255,255,0.02)",
+    borderColor: RED,
+    backgroundColor: "rgba(255,0,64,0.05)",
+    shadowColor: RED,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
   },
   tabBtn: {
     paddingVertical: 10,

@@ -31,7 +31,7 @@ export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState(null);
   const [cars, setCars] = useState([]);
-  const [followers, setFollowers] = useState(0);        // ✅ added
+  const [followers, setFollowers] = useState(0); // ✅ added
   const [followingCount, setFollowingCount] = useState(0); // ✅ added
   const [editVisible, setEditVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,15 +61,31 @@ export default function ProfileScreen({ navigation }) {
 
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glowAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(glowAnim, { toValue: 0.5, duration: 1500, useNativeDriver: true }),
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0.5,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
       ])
     ).start();
 
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.03, duration: 2000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, {
+          toValue: 1.03,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
       ])
     ).start();
   }, [user]);
@@ -115,7 +131,10 @@ export default function ProfileScreen({ navigation }) {
 
     if (!result.canceled) {
       setLoading(true);
-      const { data, error } = await profileService.uploadAvatar(result.assets[0].uri, user.id);
+      const { data, error } = await profileService.uploadAvatar(
+        result.assets[0].uri,
+        user.id
+      );
       if (error) Alert.alert("Upload Failed", error.message);
       else setProfile({ ...profile, avatar_url: data });
       setLoading(false);
@@ -167,7 +186,11 @@ export default function ProfileScreen({ navigation }) {
     return (
       <View style={styles.badgeContainer}>
         {profile.badges.map((badge, index) => (
-          <LinearGradient key={index} colors={["#8B0000", "#320000"]} style={styles.badgeChip}>
+          <LinearGradient
+            key={index}
+            colors={["#8B0000", "#320000"]}
+            style={styles.badgeChip}
+          >
             <Text style={styles.badgeText}>{badge}</Text>
           </LinearGradient>
         ))}
@@ -176,21 +199,37 @@ export default function ProfileScreen({ navigation }) {
   };
 
   return (
-    <LinearGradient colors={["#000", "#0a0a0a", "#000"]} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <LinearGradient
+      colors={["#000", "#0a0a0a", "#000"]}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.bannerContainer}>
-          <LinearGradient colors={["#150000", "#000000"]} style={styles.bannerGradient}>
+          <LinearGradient
+            colors={["#150000", "#000000"]}
+            style={styles.bannerGradient}
+          >
             <Text style={styles.bannerText}>
-              {profile?.full_name ? `${profile.full_name}'s Garage` : "Welcome to Your Garage"}
+              {profile?.full_name
+                ? `${profile.full_name}'s Garage`
+                : "Welcome to Your Garage"}
             </Text>
           </LinearGradient>
         </View>
 
         {profile && (
-          <Animated.View style={[styles.profileContainer, { opacity: fadeAnim }]}>
+          <Animated.View
+            style={[styles.profileContainer, { opacity: fadeAnim }]}
+          >
             <View style={styles.avatarWrapper}>
               <Animated.View
-                style={[styles.avatarGlow, { opacity: glowAnim, shadowOpacity: glowAnim }]}
+                style={[
+                  styles.avatarGlow,
+                  { opacity: glowAnim, shadowOpacity: glowAnim },
+                ]}
               />
               <TouchableOpacity onPress={handleAvatarChange}>
                 <Image
@@ -206,13 +245,17 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <Animated.Text style={[styles.name, { transform: [{ scale: pulseAnim }] }]}>
+            <Animated.Text
+              style={[styles.name, { transform: [{ scale: pulseAnim }] }]}
+            >
               {profile.full_name || "Unnamed Racer"}
             </Animated.Text>
             <Text style={styles.username}>@{profile.username || "user"}</Text>
             {renderBadges()}
 
-            <Text style={styles.bio}>{profile.bio || "Every car tells a story. This is mine."}</Text>
+            <Text style={styles.bio}>
+              {profile.bio || "Every car tells a story. This is mine."}
+            </Text>
 
             {/* Quick Actions */}
             <View style={styles.actionRow}>
@@ -275,7 +318,9 @@ export default function ProfileScreen({ navigation }) {
             <CarShowcase
               title="My Builds"
               cars={cars}
-              onSelect={(car) => navigation.navigate("CarDetailScreen", { carId: car.id })}
+              onSelect={(car) =>
+                navigation.navigate("CarDetailScreen", { carId: car.id })
+              }
             />
 
             {/* Sign Out */}
@@ -287,26 +332,77 @@ export default function ProfileScreen({ navigation }) {
       </ScrollView>
 
       {/* Edit Modal */}
-      <Modal visible={editVisible} animationType="slide" onRequestClose={() => setEditVisible(false)}>
+      <Modal
+        visible={editVisible}
+        animationType="slide"
+        onRequestClose={() => setEditVisible(false)}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalContainer}
         >
-          <Text style={styles.modalTitle}>Edit Profile</Text>
+          <View style={{ paddingTop: 12 }}>
+            <Text style={styles.modalTitle}>Edit Profile</Text>
+          </View>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#777" value={fullName} onChangeText={setFullName} />
-            <TextInput style={[styles.input, styles.bioInput]} placeholder="Bio" placeholderTextColor="#777" value={bio} onChangeText={setBio} multiline />
-            <TextInput style={styles.input} placeholder="Instagram" placeholderTextColor="#777" value={instagram} onChangeText={setInstagram} />
-            <TextInput style={styles.input} placeholder="TikTok" placeholderTextColor="#777" value={tiktok} onChangeText={setTiktok} />
-            <TextInput style={styles.input} placeholder="YouTube" placeholderTextColor="#777" value={youtube} onChangeText={setYoutube} />
-            <TextInput style={styles.input} placeholder="Website" placeholderTextColor="#777" value={website} onChangeText={setWebsite} />
+            <TextInput
+              style={styles.input}
+              placeholder="Full Name"
+              placeholderTextColor="#777"
+              value={fullName}
+              onChangeText={setFullName}
+            />
+            <TextInput
+              style={[styles.input, styles.bioInput]}
+              placeholder="Bio"
+              placeholderTextColor="#777"
+              value={bio}
+              onChangeText={setBio}
+              multiline
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Instagram"
+              placeholderTextColor="#777"
+              value={instagram}
+              onChangeText={setInstagram}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="TikTok"
+              placeholderTextColor="#777"
+              value={tiktok}
+              onChangeText={setTiktok}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="YouTube"
+              placeholderTextColor="#777"
+              value={youtube}
+              onChangeText={setYoutube}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Website"
+              placeholderTextColor="#777"
+              value={website}
+              onChangeText={setWebsite}
+            />
           </ScrollView>
           <View style={styles.modalButtons}>
-            <TouchableOpacity onPress={() => setEditVisible(false)} style={styles.cancelBtn}>
+            <TouchableOpacity
+              onPress={() => setEditVisible(false)}
+              style={styles.cancelBtn}
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSaveProfile} style={styles.saveBtn}>
-              <Text style={styles.saveText}>{loading ? "Saving..." : "Save"}</Text>
+            <TouchableOpacity
+              onPress={handleSaveProfile}
+              style={styles.saveBtn}
+            >
+              <Text style={styles.saveText}>
+                {loading ? "Saving..." : "Save"}
+              </Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -318,55 +414,139 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { alignItems: "center", paddingBottom: 100 },
-  bannerContainer: { width: "100%", height: 140 },
+  bannerContainer: { width: "100%", height: 80, marginBottom: 8 },
   bannerGradient: {
     flex: 1,
-    justifyContent: "flex-end",
+    justifyContent: "center",
     alignItems: "center",
-    paddingBottom: 25,
-    borderBottomWidth: 1,
-    borderBottomColor: "#8B0000",
+    paddingBottom: 15,
+    borderBottomWidth: 2,
+    borderBottomColor: "#ff0040",
   },
-  bannerText: { color: "#fff", fontSize: 20, fontWeight: "600", textTransform: "uppercase" },
-  profileContainer: { alignItems: "center", width: "90%", marginTop: 20 },
-  avatarWrapper: { alignItems: "center", justifyContent: "center", marginBottom: 16 },
+  bannerText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  profileContainer: { alignItems: "center", width: "90%", marginTop: 10 },
+  avatarWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
   avatarGlow: {
     position: "absolute",
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: "#8B0000",
+    backgroundColor: "#ff0040",
     opacity: 0.4,
-    shadowColor: "#ff0000",
+    shadowColor: "#ff0040",
     shadowRadius: 30,
     shadowOpacity: 0.8,
     elevation: 8,
   },
-  avatar: { width: 130, height: 130, borderRadius: 65, borderWidth: 1.5, borderColor: "#ff1f1f" },
+  avatar: {
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    borderWidth: 2,
+    borderColor: "#ff0040",
+  },
   name: { color: "#fff", fontSize: 22, fontWeight: "bold", marginTop: 6 },
-  username: { color: "#ff1f1f", fontSize: 14, marginBottom: 8 },
-  bio: { color: "#bbb", fontSize: 13, textAlign: "center", marginBottom: 20, width: width * 0.8 },
-  badgeContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 10 },
-  badgeChip: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, margin: 4, shadowColor: "#ff1f1f", shadowOpacity: 0.6, shadowRadius: 10 },
+  username: { color: "#ff0040", fontSize: 14, marginBottom: 8 },
+  bio: {
+    color: "#bbb",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 20,
+    width: width * 0.8,
+  },
+  badgeContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  badgeChip: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    margin: 4,
+    shadowColor: "#ff0040",
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+  },
   badgeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  actionRow: { flexDirection: "row", justifyContent: "space-around", width: "100%", marginBottom: 25 },
-  actionButton: { alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0a", borderRadius: 50, width: 70, height: 70, borderWidth: 1, borderColor: "#222" },
-  actionGlow: { shadowColor: "#8B0000", shadowRadius: 10, shadowOpacity: 0.5 },
+  actionRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginVertical: 16,
+  },
+  actionButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0a0a0a",
+    borderRadius: 50,
+    width: 70,
+    height: 70,
+    borderWidth: 1,
+    borderColor: "#222",
+  },
+  actionGlow: { shadowColor: "#ff0040", shadowRadius: 10, shadowOpacity: 0.5 },
   actionLabel: { color: "#fff", fontSize: 12, marginTop: 5, fontWeight: "500" },
-  statsContainer: { flexDirection: "row", justifyContent: "space-between", width: "95%", marginBottom: 25, backgroundColor: "#0d0d0d", borderRadius: 12, paddingVertical: 12 },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "95%",
+    marginBottom: 16,
+    backgroundColor: "#0d0d0d",
+    borderRadius: 12,
+    paddingVertical: 10,
+  },
   statCard: { alignItems: "center", flex: 1 },
   statValue: { color: "#fff", fontSize: 17, fontWeight: "bold" },
   statLabel: { color: "#777", fontSize: 12 },
-  socialRow: { flexDirection: "row", gap: 28, marginBottom: 30 },
+  socialRow: { flexDirection: "row", gap: 24, marginBottom: 20 },
   signOutButton: { marginTop: 15 },
   signOutText: { color: "#666", fontSize: 14 },
-  modalContainer: { flex: 1, backgroundColor: "#000", padding: 20 },
-  modalTitle: { color: "#fff", fontSize: 22, fontWeight: "bold", marginBottom: 15 },
-  input: { backgroundColor: "#111", color: "#fff", borderRadius: 10, padding: 10, marginBottom: 15, borderWidth: 1, borderColor: "#1c1c1c" },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 40,
+  },
+  modalTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+  input: {
+    backgroundColor: "#111",
+    color: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#1c1c1c",
+  },
   bioInput: { height: 80, textAlignVertical: "top" },
-  modalButtons: { flexDirection: "row", justifyContent: "space-between", marginTop: 15 },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 15,
+  },
   cancelBtn: { padding: 10 },
   cancelText: { color: "#888" },
-  saveBtn: { backgroundColor: "#8B0000", paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10 },
+  saveBtn: {
+    backgroundColor: "#ff0040",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
   saveText: { color: "#fff", fontWeight: "bold" },
 });

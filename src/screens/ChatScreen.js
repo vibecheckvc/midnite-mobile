@@ -27,7 +27,9 @@ export default function ChatScreen({ route, navigation }) {
     const { data } = await chatService.getMessages(chatId, { limit: 100 });
     setMessages(data);
     // Scroll to bottom after initial load
-    requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: false }));
+    requestAnimationFrame(() =>
+      listRef.current?.scrollToEnd({ animated: false })
+    );
   }, [chatId]);
 
   useEffect(() => {
@@ -43,7 +45,9 @@ export default function ChatScreen({ route, navigation }) {
     load();
     const unsubscribe = chatService.subscribeToMessages(chatId, (newMsg) => {
       setMessages((prev) => [...prev, newMsg]);
-      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+      requestAnimationFrame(() =>
+        listRef.current?.scrollToEnd({ animated: true })
+      );
     });
     return unsubscribe;
   }, [chatId, load]);
@@ -84,11 +88,17 @@ export default function ChatScreen({ route, navigation }) {
       <View style={[styles.row, isMine ? styles.rowMine : styles.rowOther]}>
         <LinearGradient
           colors={isMine ? colors.purpleGradient : colors.blueGradient}
-          style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleOther]}
+          style={[
+            styles.bubble,
+            isMine ? styles.bubbleMine : styles.bubbleOther,
+          ]}
         >
           <Text style={styles.msgText}>{item.content}</Text>
           <Text style={styles.msgTime}>
-            {new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            {new Date(item.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </Text>
         </LinearGradient>
       </View>
@@ -112,7 +122,11 @@ export default function ChatScreen({ route, navigation }) {
 
       <View style={styles.inputBar}>
         <View style={styles.inputWrap}>
-          <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textMuted} />
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={18}
+            color={colors.textMuted}
+          />
           <TextInput
             style={styles.input}
             placeholder="Message..."
@@ -125,8 +139,15 @@ export default function ChatScreen({ route, navigation }) {
             onSubmitEditing={onSend}
           />
         </View>
-        <TouchableOpacity onPress={onSend} style={styles.sendBtn} activeOpacity={0.85}>
-          <LinearGradient colors={colors.purpleGradient} style={styles.sendGrad}>
+        <TouchableOpacity
+          onPress={onSend}
+          style={styles.sendBtn}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={colors.purpleGradient}
+            style={styles.sendGrad}
+          >
             <Ionicons name="send" size={18} color={colors.textPrimary} />
           </LinearGradient>
         </TouchableOpacity>
@@ -149,23 +170,36 @@ const styles = StyleSheet.create({
   bubbleMine: { borderBottomRightRadius: 4 },
   bubbleOther: { borderBottomLeftRadius: 4 },
   msgText: { color: colors.textPrimary, fontSize: 14, lineHeight: 19 },
-  msgTime: { color: colors.textSecondary, fontSize: 10, marginTop: 6, textAlign: "right" },
+  msgTime: {
+    color: colors.textSecondary,
+    fontSize: 10,
+    marginTop: 6,
+    textAlign: "right",
+  },
   inputBar: {
-    padding: 10,
+    padding: 12,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.cardBackground,
-    borderTopColor: colors.accent,
-    borderTopWidth: 1,
+    borderTopColor: colors.red,
+    borderTopWidth: 2,
+    shadowColor: colors.red,
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
   },
   inputWrap: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.background,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    height: 42,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
     borderWidth: 1,
     borderColor: colors.accent,
     gap: 8,
@@ -173,10 +207,18 @@ const styles = StyleSheet.create({
   input: { flex: 1, color: colors.textPrimary, fontSize: 14 },
   sendBtn: { marginLeft: 10 },
   sendGrad: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: colors.red,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });
