@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { pickAndUploadPhoto } from "../utils/supabaseHelpers";
 
 const RED = "#ff375f";
 const BG = "#000000";
@@ -53,25 +54,6 @@ export default function AddCarModal({
     if (!r.canceled) setCoverUri(r.assets[0].uri);
   };
 
-  const uploadCover = async (uri, carId) => {
-    try {
-      const filename = `car_${carId}/cover_${Date.now()}.jpg`;
-      const res = await fetch(uri);
-      const blob = await res.blob();
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(filename, blob, { contentType: "image/jpeg" });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage
-        .from(BUCKET)
-        .getPublicUrl(filename);
-      return pub?.publicUrl || null;
-    } catch (e) {
-      console.log("Upload error:", e.message);
-      return null;
-    }
-  };
-
   const handleAdd = async () => {
     if (!make.trim() || !model.trim() || !year.trim()) {
       Alert.alert("Missing fields", "Please fill in make, model, and year.");
@@ -95,10 +77,12 @@ export default function AddCarModal({
         .single();
 
       if (insertError) throw insertError;
-      let coverUrl = null;
 
+      // Use pickAndUploadPhoto if coverUri is set
+      let coverUrl = null;
       if (coverUri) {
-        coverUrl = await uploadCover(coverUri, insertData.id);
+        // pickAndUploadPhoto expects (supabase, carId)
+        coverUrl = await pickAndUploadPhoto(supabase, insertData.id);
         if (coverUrl) {
           await supabase
             .from("cars")

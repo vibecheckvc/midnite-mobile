@@ -328,7 +328,8 @@ export default function GarageScreen() {
             });
           }}
         />
-      )}
+      )
+      }
     </SafeAreaView>
   );
 }
@@ -347,13 +348,16 @@ const CarModal = ({ visible, onClose, user, initialCar, onSaved }) => {
   const [coverUrl, setCoverUrl] = useState(initialCar?.cover_url ?? null);
   const [saving, setSaving] = useState(false);
 
+  // Fix: Use the returned URL directly
   const pickCover = async () => {
     try {
-      const { uri } = await pickAndUploadPhoto(
-        supabase,
-        initialCar?.id || "temp"
-      );
-      if (uri) setCoverUrl(uri);
+      // For new cars, we don't have an id yet, so skip upload until after save
+      if (!isEdit) {
+        Alert.alert("Save car first", "Please save the car before adding a cover image.");
+        return;
+      }
+      const url = await pickAndUploadPhoto(supabase, initialCar.id);
+      if (url) setCoverUrl(url);
     } catch {
       Alert.alert("Error", "Failed to pick or upload photo.");
     }
@@ -396,13 +400,40 @@ const CarModal = ({ visible, onClose, user, initialCar, onSaved }) => {
         if (error) throw error;
         car = data;
       } else {
+        // 1. Insert car without cover_url
         const { data, error } = await supabase
           .from("cars")
-          .insert(payload)
+          .insert({ ...payload, cover_url: null })
           .select()
           .single();
         if (error) throw error;
         car = data;
+
+        // 2. If user wants to add a cover image, prompt them now
+        if (!coverUrl) {
+          Alert.alert(
+            "Add Cover Image?",
+            "Would you like to add a cover image now?",
+            [
+              { text: "No", style: "cancel", onPress: () => onSaved(car) },
+              {
+                text: "Yes",
+                onPress: async () => {
+                  const url = await pickAndUploadPhoto(supabase, car.id);
+                  if (url) {
+                    await supabase
+                      .from("cars")
+                      .update({ cover_url: url })
+                      .eq("id", car.id);
+                    car.cover_url = url;
+                  }
+                  onSaved(car);
+                },
+              },
+            ]
+          );
+          return;
+        }
       }
       onSaved(car);
     } catch (e) {
@@ -439,6 +470,7 @@ const CarModal = ({ visible, onClose, user, initialCar, onSaved }) => {
               onPress={pickCover}
               style={styles.coverPicker}
               activeOpacity={0.8}
+              disabled={!isEdit}
             >
               {coverUrl ? (
                 <Image source={{ uri: coverUrl }} style={styles.coverImg} />

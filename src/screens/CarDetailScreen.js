@@ -74,7 +74,7 @@ export default function CarDetailScreen({ route, navigation }) {
   }, [active, tabW]);
 
   const reloadAll = () => setRefreshKey((k) => k + 1);
-  const common = { car, supabase, onReload: reloadAll, key: refreshKey };
+  const common = { car, supabase, onReload: reloadAll }; // ✅ removed key from spread
 
   // 🔹 Loading / not found states
   if (loading) {
@@ -151,12 +151,12 @@ export default function CarDetailScreen({ route, navigation }) {
 
       {/* Body (lazy render only active tab for speed) */}
       <View style={{ flex: 1 }}>
-        {active === 0 && <OverviewTab {...common} />}
-        {active === 1 && <MaintenanceTab {...common} />}
-        {active === 2 && <PartsTab {...common} />}
-        {active === 3 && <PhotosTab {...common} />}
-        {active === 4 && <TasksTab {...common} />}
-        {active === 5 && <TimelineTab {...common} />}
+        {active === 0 && <OverviewTab {...common} key={`overview-${refreshKey}`} />}
+        {active === 1 && <MaintenanceTab {...common} key={`maint-${refreshKey}`} />}
+        {active === 2 && <PartsTab {...common} key={`parts-${refreshKey}`} />}
+        {active === 3 && <PhotosTab {...common} key={`photos-${refreshKey}`} />}
+        {active === 4 && <TasksTab {...common} key={`tasks-${refreshKey}`} />}
+        {active === 5 && <TimelineTab {...common} key={`timeline-${refreshKey}`} />}
       </View>
     </View>
   );

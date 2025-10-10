@@ -17,20 +17,16 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
     const getInitialSession = async () => {
       try {
         const {
           data: { session },
           error,
         } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Error getting session:", error);
-        } else {
-          console.log("Initial session:", session ? "Found" : "None");
-          setSession(session);
-          setUser(session?.user ?? null);
-        }
+
+        if (error) console.error("Error getting session:", error);
+        setSession(session);
+        setUser(session?.user ?? null);
       } catch (error) {
         console.error("Error in getInitialSession:", error);
       } finally {
@@ -40,7 +36,6 @@ export const AuthProvider = ({ children }) => {
 
     getInitialSession();
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -57,33 +52,50 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sign up function
+  /* ============================
+     🧩 SIGN UP (with auto-login)
+  ============================ */
   const signUp = async (email, password, username) => {
     try {
       setLoading(true);
+
+      // Step 1: Create user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            username: username,
-          },
+          data: { username },
+          emailRedirectTo: undefined, // disable email verification redirect
         },
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      return { data, error: null };
+      // Step 2: Immediately sign them in (since verification is off)
+      const { data: loginData, error: loginError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      if (loginError) throw loginError;
+
+      // Step 3: Update context manually to guarantee active session
+      setUser(loginData.user);
+      setSession(loginData.session);
+
+      return { data: loginData, error: null };
     } catch (error) {
+      console.error("Sign-up error:", error.message);
       return { data: null, error };
     } finally {
       setLoading(false);
     }
   };
 
-  // Sign in function
+  /* ============================
+     🔑 SIGN IN
+  ============================ */
   const signIn = async (email, password) => {
     try {
       setLoading(true);
@@ -91,48 +103,51 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       });
+      if (error) throw error;
 
-      if (error) {
-        throw error;
-      }
+      setUser(data.user);
+      setSession(data.session);
 
       return { data, error: null };
     } catch (error) {
+      console.error("Sign-in error:", error.message);
       return { data: null, error };
     } finally {
       setLoading(false);
     }
   };
 
-  // Sign out function
+  /* ============================
+     🚪 SIGN OUT
+  ============================ */
   const signOut = async () => {
     try {
       setLoading(true);
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
+      setUser(null);
+      setSession(null);
       return { error: null };
     } catch (error) {
+      console.error("Sign-out error:", error.message);
       return { error };
     } finally {
       setLoading(false);
     }
   };
 
-  // Reset password function
+  /* ============================
+     🔄 RESET PASSWORD
+  ============================ */
   const resetPassword = async (email) => {
     try {
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: "midnite://reset-password",
       });
-
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       return { data, error: null };
     } catch (error) {
+      console.error("Reset password error:", error.message);
       return { data: null, error };
     }
   };

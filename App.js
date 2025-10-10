@@ -1,21 +1,21 @@
 // App.js
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-// Import screens
+// Screens
 import LoadingScreen from "./src/screens/LoadingScreen";
 import AuthScreen from "./src/screens/AuthScreen";
 import MainTabs from "./src/navigation/MainTabs";
 import CarDetailScreen from "./src/screens/CarDetailScreen";
-import DriverProfileScreen from "./src/screens/DriverProfileScreen"; // ✅ Added
-import ChatScreen from "./src/screens/ChatScreen"; // ✅ New import
+import DriverProfileScreen from "./src/screens/DriverProfileScreen";
+import ChatScreen from "./src/screens/ChatScreen";
 
-// Import Supabase + Auth
-import { supabase } from "./src/lib/supabase";
+// Supabase + Auth
+import { supabase, initializeSupabaseSession } from "./src/lib/supabase";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 
 const Stack = createStackNavigator();
@@ -30,11 +30,7 @@ function AppNavigator() {
 
   return (
     <NavigationContainer>
-      <StatusBar
-        style="light"
-        backgroundColor="#000000"
-        barStyle="light-content"
-      />
+      <StatusBar style="light" backgroundColor="#000000" barStyle="light-content" />
 
       <Stack.Navigator screenOptions={{ animation: "fade_from_bottom" }}>
         {user ? (
@@ -46,7 +42,7 @@ function AppNavigator() {
               options={{ headerShown: false }}
             />
 
-            {/* ✅ Car detail page */}
+            {/* Car Detail */}
             <Stack.Screen
               name="CarDetailScreen"
               options={{ headerShown: false }}
@@ -56,7 +52,7 @@ function AppNavigator() {
               )}
             </Stack.Screen>
 
-            {/* ✅ Public driver profile page */}
+            {/* Public Driver Profile */}
             <Stack.Screen
               name="DriverProfileScreen"
               component={DriverProfileScreen}
@@ -69,7 +65,7 @@ function AppNavigator() {
               }}
             />
 
-            {/* ✅ Chat screen */}
+            {/* Chat */}
             <Stack.Screen
               name="ChatScreen"
               component={ChatScreen}
@@ -83,7 +79,7 @@ function AppNavigator() {
             />
           </>
         ) : (
-          /* Auth flow */
+          // Auth Flow
           <Stack.Screen
             name="Auth"
             component={AuthScreen}
@@ -97,6 +93,33 @@ function AppNavigator() {
 
 /* =================== ROOT =================== */
 export default function App() {
+  const [initialized, setInitialized] = useState(false);
+
+  // ✅ Ensure Supabase session loads before AuthProvider mounts
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await initializeSupabaseSession();
+        if (error) {
+          console.warn("Supabase init warning:", error.message);
+        }
+        if (!data?.session) {
+          console.log("⚠️ No existing Supabase session found");
+        } else {
+          console.log("✅ Session restored for:", data.session.user?.email);
+        }
+      } catch (err) {
+        console.error("Supabase init error:", err);
+      } finally {
+        setInitialized(true);
+      }
+    })();
+  }, []);
+
+  if (!initialized) {
+    return <LoadingScreen />;
+  }
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <AuthProvider>

@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_WuDx0OgA09jm9siEa2zDyanvyhIU",
+  "orgId": "team_85s8LtQh5hzeNV3aP60DYMuc",
+  "projectName": "midnite-auto",
+  "settings": {
+    "createdAt": 1760052736575,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "22.x"
+  }
+}
