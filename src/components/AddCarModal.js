@@ -16,12 +16,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 
-const RED = "#ff0040";
+const RED = "#ff375f";
 const BG = "#000000";
-const CARD = "rgba(255,255,255,0.05)";
-const BORDER = "rgba(255,0,64,0.3)";
+const CARD = "#1c1c1e";
+const BORDER = "rgba(255,55,95,0.2)";
 const TEXT = "#ffffff";
-const MUTED = "#888888";
+const MUTED = "#8e8e93";
 const BUCKET = "car-photos";
 
 export default function AddCarModal({
@@ -205,11 +205,12 @@ function Field({ label, ...props }) {
         placeholderTextColor={MUTED}
         style={{
           backgroundColor: CARD,
-          borderWidth: 1,
-          borderColor: BORDER,
-          borderRadius: 12,
-          padding: 12,
+          borderWidth: 0,
+          borderRadius: 16,
+          padding: 16,
           color: TEXT,
+          fontSize: 16,
+          letterSpacing: -0.2,
         }}
       />
     </View>
@@ -226,15 +227,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  modalTitle: { color: TEXT, fontWeight: "700", fontSize: 16 },
-  save: { color: RED, fontWeight: "700" },
-  muted: { color: MUTED },
+  modalTitle: {
+    color: TEXT,
+    fontWeight: "700",
+    fontSize: 18,
+    letterSpacing: -0.4,
+  },
+  save: {
+    color: RED,
+    fontWeight: "700",
+    fontSize: 16,
+    letterSpacing: -0.2,
+  },
+  muted: {
+    color: MUTED,
+    fontSize: 16,
+    letterSpacing: -0.2,
+  },
   form: { padding: 16, paddingBottom: 40 },
   uploadBox: {
     backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 12,
+    borderWidth: 0,
+    borderRadius: 16,
     height: 180,
     alignItems: "center",
     justifyContent: "center",

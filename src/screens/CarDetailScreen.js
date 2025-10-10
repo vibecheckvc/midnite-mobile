@@ -20,11 +20,11 @@ import PhotosTab from "../components/carTabs/PhotosTab";
 import TasksTab from "../components/carTabs/TasksTab";
 import TimelineTab from "../components/carTabs/TimelineTab";
 
-const RED = "#ff0040",
+const RED = "#ff375f",
   BG = "#000000",
-  BORDER = "rgba(255,0,64,0.3)",
+  BORDER = "rgba(255,55,95,0.2)",
   TEXT = "#ffffff",
-  MUTED = "#888888";
+  MUTED = "#8e8e93";
 
 export default function CarDetailScreen({ route, navigation }) {
   const { car: passedCar, carId: passedCarId } = route.params || {};
@@ -174,20 +174,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  headerTitle: { color: TEXT, fontWeight: "800", fontSize: 16 },
+  headerTitle: {
+    color: TEXT,
+    fontWeight: "700",
+    fontSize: 18,
+    letterSpacing: -0.4,
+  },
   tabBar: {
-    borderTopWidth: 2,
-    borderBottomWidth: 1,
-    borderColor: RED,
-    backgroundColor: "rgba(255,0,64,0.05)",
-    shadowColor: RED,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
+    borderTopWidth: 0.5,
+    borderBottomWidth: 0,
+    borderColor: BORDER,
+    backgroundColor: "rgba(28,28,30,0.95)",
   },
   tabBtn: {
     paddingVertical: 10,
@@ -195,7 +192,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 4,
   },
-  tabTxt: { color: MUTED, fontSize: 12, fontWeight: "800" },
+  tabTxt: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: -0.2,
+  },
   underline: {
     position: "absolute",
     bottom: 0,

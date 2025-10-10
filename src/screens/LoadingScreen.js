@@ -158,17 +158,19 @@ const styles = StyleSheet.create({
     height: 80,
   },
   tagline: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 20,
+    fontWeight: "700",
     color: colors.textSecondary,
     marginBottom: 8,
     letterSpacing: 1,
   },
   description: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textMuted,
     marginBottom: 40,
     textAlign: "center",
+    letterSpacing: -0.2,
+    lineHeight: 22,
   },
   loadingContainer: {
     alignItems: "center",
@@ -193,8 +195,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: colors.textMuted,
-    fontSize: 12,
-    letterSpacing: 1,
+    fontSize: 14,
+    letterSpacing: 0.5,
+    fontWeight: "600",
   },
   dotsContainer: {
     flexDirection: "row",

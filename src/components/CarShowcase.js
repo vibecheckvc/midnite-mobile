@@ -81,19 +81,10 @@ const styles = StyleSheet.create({
   },
   card: {
     width: width * 0.6,
-    height: 160,
+    height: 180,
     borderRadius: 16,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,0,64,0.3)",
-    shadowColor: "#ff0040",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 6,
+    borderWidth: 0,
   },
   image: {
     width: "100%",
@@ -107,8 +98,18 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
   },
-  carName: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  carSub: { color: "#999", fontSize: 12 },
+  carName: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+    letterSpacing: -0.3,
+  },
+  carSub: {
+    color: "#8e8e93",
+    fontSize: 13,
+    letterSpacing: -0.2,
+    fontWeight: "500",
+  },
   emptyContainer: { alignItems: "center", marginTop: 20 },
   emptyText: { color: "#777", fontSize: 13, textAlign: "center" },
 });

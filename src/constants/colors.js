@@ -1,46 +1,46 @@
 export const colors = {
-  // Primary colors - Underground street racing theme
+  // Primary colors - Premium Apple-inspired underground theme
   primary: "#000000", // Pure black background
   secondary: "#0a0a0a", // Very dark grey
-  accent: "#1a1a1a", // Slightly lighter dark grey
+  accent: "#1c1c1e", // Apple-style dark grey
 
-  // Accent colors - Aggressive red and neon
-  purple: "#ff0040", // Bright red for primary actions
+  // Accent colors - Refined red with premium feel
+  purple: "#ff375f", // Premium red for primary actions
   purpleDark: "#cc0033", // Darker red
-  red: "#ff0040", // Primary red accent
-  green: "#00ff41", // Neon green for success
-  cyan: "#00d4ff", // Neon cyan for info
+  red: "#ff375f", // Primary red accent (Apple-inspired)
+  green: "#30d158", // Apple-style green
+  cyan: "#64d2ff", // Apple-style cyan
 
-  // Text colors - High contrast
+  // Text colors - Premium hierarchy
   textPrimary: "#ffffff", // Pure white text
-  textSecondary: "#f0f0f0", // Light grey text
-  textMuted: "#888888", // Muted grey text
+  textSecondary: "#ebebf5", // Apple-style secondary text
+  textMuted: "#8e8e93", // Apple-style tertiary text
 
-  // Background colors - Deep blacks with subtle gradients
+  // Background colors - Premium blacks
   background: "#000000", // Pure black background
-  cardBackground: "#0d0d0d", // Dark card backgrounds
-  inputBackground: "#1a1a1a", // Input backgrounds
+  cardBackground: "#1c1c1e", // Apple-style card background
+  inputBackground: "#1c1c1e", // Apple-style input background
 
-  // Status colors - Neon theme
-  success: "#00ff41",
-  warning: "#ffaa00",
-  error: "#ff0040",
-  info: "#00d4ff",
+  // Status colors - Apple-inspired
+  success: "#30d158",
+  warning: "#ff9f0a",
+  error: "#ff375f",
+  info: "#64d2ff",
 
-  // Gradients - Underground racing theme
-  purpleGradient: ["#ff0040", "#cc0033"],
-  redGradient: ["#ff0040", "#990026"],
-  darkGradient: ["#000000", "#0a0a0a"],
-  blueGradient: ["#00d4ff", "#0099cc"],
-  neonGradient: ["#00ff41", "#00cc33"],
-  dangerGradient: ["#ff0040", "#990026"],
+  // Gradients - Premium underground racing theme
+  purpleGradient: ["#ff375f", "#ff1744"],
+  redGradient: ["#ff375f", "#cc0033"],
+  darkGradient: ["#000000", "#1c1c1e"],
+  blueGradient: ["#64d2ff", "#0a84ff"],
+  neonGradient: ["#30d158", "#00cc33"],
+  dangerGradient: ["#ff375f", "#990026"],
 };
 
 export const gradients = {
-  purple: ["#ff0040", "#cc0033"],
-  red: ["#ff0040", "#990026"],
-  dark: ["#000000", "#0a0a0a"],
-  blue: ["#00d4ff", "#0099cc"],
-  neon: ["#00ff41", "#00cc33"],
-  danger: ["#ff0040", "#990026"],
+  purple: ["#ff375f", "#ff1744"],
+  red: ["#ff375f", "#cc0033"],
+  dark: ["#000000", "#1c1c1e"],
+  blue: ["#64d2ff", "#0a84ff"],
+  neon: ["#30d158", "#00cc33"],
+  danger: ["#ff375f", "#990026"],
 };
