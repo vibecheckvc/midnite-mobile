@@ -5,6 +5,8 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as Font from "expo-font";
+import { Ionicons } from "@expo/vector-icons";
 
 // Screens
 import LoadingScreen from "./src/screens/LoadingScreen";
@@ -20,7 +22,7 @@ import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
 
 const Stack = createStackNavigator();
 
-/* =================== NAVIGATOR =================== */
+/* =================== APP NAVIGATOR =================== */
 function AppNavigator() {
   const { user, loading } = useAuth();
 
@@ -32,19 +34,17 @@ function AppNavigator() {
       <Stack.Navigator screenOptions={{ animation: "fade_from_bottom" }}>
         {user ? (
           <>
-            {/* Main tabs */}
             <Stack.Screen
               name="MainTabs"
               component={MainTabs}
               options={{ headerShown: false }}
             />
-
-            {/* Car detail */}
-            <Stack.Screen name="CarDetailScreen" options={{ headerShown: false }}>
+            <Stack.Screen
+              name="CarDetailScreen"
+              options={{ headerShown: false }}
+            >
               {(props) => <CarDetailScreen {...props} supabase={supabase} user={user} />}
             </Stack.Screen>
-
-            {/* Public driver profile */}
             <Stack.Screen
               name="DriverProfileScreen"
               component={DriverProfileScreen}
@@ -55,8 +55,6 @@ function AppNavigator() {
                 headerTintColor: "#fff",
               }}
             />
-
-            {/* Chat */}
             <Stack.Screen
               name="ChatScreen"
               component={ChatScreen}
@@ -69,7 +67,11 @@ function AppNavigator() {
             />
           </>
         ) : (
-          <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="Auth"
+            component={AuthScreen}
+            options={{ headerShown: false }}
+          />
         )}
       </Stack.Navigator>
     </NavigationContainer>
@@ -78,7 +80,20 @@ function AppNavigator() {
 
 /* =================== ROOT APP =================== */
 export default function App() {
-  // Handle Supabase email redirects on web
+  // Preload icon fonts for web (fix missing icons on Vercel)
+  useEffect(() => {
+    async function loadFonts() {
+      await Font.loadAsync({
+        ...Ionicons.font,
+        Ionicons: require("./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"),
+        MaterialIcons: require("./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf"),
+        FontAwesome: require("./node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome.ttf"),
+      });
+    }
+    loadFonts();
+  }, []);
+
+  // Handle Supabase auth redirect for web
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash) {
       const hash = window.location.hash.substring(1);
@@ -87,20 +102,16 @@ export default function App() {
       const refresh_token = params.get("refresh_token");
 
       if (access_token && refresh_token) {
-        supabase.auth
-          .setSession({ access_token, refresh_token })
-          .then(({ error }) => {
-            if (error) {
-              console.error("❌ Error restoring Supabase session:", error.message);
-            } else {
-              console.log("✅ Supabase session restored from URL");
-              // Optional redirect to main page after confirmation
-              window.location.replace("/");
-            }
-          });
+        supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
+          if (error) {
+            console.error("❌ Error restoring Supabase session:", error.message);
+          } else {
+            console.log("✅ Supabase session restored from URL");
+            window.location.replace("/");
+          }
+        });
       }
 
-      // Clean up hash for a clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -118,6 +129,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#000000",
   },
 });

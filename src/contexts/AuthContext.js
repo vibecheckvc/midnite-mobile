@@ -5,9 +5,7 @@ const AuthContext = createContext({});
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
 
@@ -16,21 +14,19 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  /* ==========================
+     INITIAL SESSION + LISTENER
+  ========================== */
   useEffect(() => {
-    // Get initial session
     const getInitialSession = async () => {
       try {
         const {
           data: { session },
           error,
         } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Error getting session:", error);
-        } else {
-          console.log("Initial session:", session ? "Found" : "None");
-          setSession(session);
-          setUser(session?.user ?? null);
-        }
+        if (error) console.error("Error getting session:", error);
+        setSession(session);
+        setUser(session?.user ?? null);
       } catch (error) {
         console.error("Error in getInitialSession:", error);
       } finally {
@@ -40,15 +36,10 @@ export const AuthProvider = ({ children }) => {
 
     getInitialSession();
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(
-        "Auth state change:",
-        event,
-        session ? "Session found" : "No session"
-      );
+      console.log("Auth state change:", event);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -57,82 +48,85 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sign up function
+  /* ==========================
+     AUTH ACTIONS
+  ========================== */
+
+  // 🚀 Sign up (instant, no email confirmation)
   const signUp = async (email, password, username) => {
     try {
-      setLoading(true);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            username: username,
-          },
+          emailRedirectTo: null, // 🔥 disables email confirmation
+          data: { username },
         },
       });
+      if (error) throw error;
 
-      if (error) {
-        throw error;
+      // If Supabase instantly returns a session (it will)
+      if (data?.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+        console.log("✅ Instant signup success:", data.session.user.email);
       }
 
       return { data, error: null };
     } catch (error) {
+      console.error("Sign-up error:", error.message);
       return { data: null, error };
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Sign in function
+  // 🚀 Sign in
   const signIn = async (email, password) => {
     try {
-      setLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+      if (error) throw error;
 
-      if (error) {
-        throw error;
+      if (data?.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+        console.log("✅ Logged in:", data.session.user.email);
       }
 
       return { data, error: null };
     } catch (error) {
+      console.error("Sign-in error:", error.message);
       return { data: null, error };
     } finally {
       setLoading(false);
     }
   };
 
-  // Sign out function
+  // 🚀 Sign out
   const signOut = async () => {
     try {
-      setLoading(true);
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
+      setUser(null);
+      setSession(null);
+      console.log("✅ Signed out");
       return { error: null };
     } catch (error) {
+      console.error("Sign-out error:", error.message);
       return { error };
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Reset password function
+  // 🚀 Reset password (still sends reset email)
   const resetPassword = async (email) => {
     try {
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "midnite://reset-password",
-      });
-
-      if (error) {
-        throw error;
-      }
-
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      console.log("✅ Password reset email sent:", email);
       return { data, error: null };
     } catch (error) {
+      console.error("Reset password error:", error.message);
       return { data: null, error };
     }
   };
