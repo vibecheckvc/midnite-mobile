@@ -4,7 +4,7 @@
     "slug": "midnite",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/midnite-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -20,7 +20,7 @@
         "UIAppFonts": []
       },
       "buildNumber": "13",
-      "icon": "./assets/icon.png"
+      "icon": "./assets/midnite-icon.png"
     },
     "android": {
       "adaptiveIcon": {
