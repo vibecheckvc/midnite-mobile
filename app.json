@@ -13,7 +13,14 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.midnite.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIAppFonts": []
+      },
+      "buildNumber": "13",
+      "icon": "./assets/icon.png"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +32,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "43e84670-e0de-4b90-bd0f-8be28e4cdde1"
+      }
+    },
+    "plugins": ["expo-font"]
   }
 }

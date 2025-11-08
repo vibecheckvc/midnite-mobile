@@ -66,10 +66,13 @@ export default function LoadingScreen() {
     outputRange: ["0deg", "360deg"],
   });
 
+  // Fallback gradient colors in case colors.darkGradient fails
+  const gradientColors = colors?.darkGradient || ["#000000", "#1a1a1a"];
+
   return (
     <View style={styles.container}>
-      <StatusBar style="light" backgroundColor={colors.primary} />
-      <LinearGradient colors={colors.darkGradient} style={styles.gradient}>
+      <StatusBar style="light" backgroundColor={colors?.primary || "#000000"} />
+      <LinearGradient colors={gradientColors} style={styles.gradient}>
         <Animated.View
           style={[
             styles.content,
@@ -88,11 +91,23 @@ export default function LoadingScreen() {
               },
             ]}
           >
-            <Image
-              source={require("./midnte.png")}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+            {(() => {
+              try {
+                return (
+                  <Image
+                    source={require("./midnte.png")}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                    onError={() => console.error("Failed to load logo image")}
+                  />
+                );
+              } catch (error) {
+                // If image fails, show text instead
+                return (
+                  <Text style={styles.logoFallback}>MIDNITE</Text>
+                );
+              }
+            })()}
           </Animated.View>
 
           {/* Tagline */}
@@ -204,7 +219,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.purple,
+    backgroundColor: colors?.purple || "#8b5cf6",
     marginHorizontal: 4,
+  },
+  logoFallback: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: colors?.textSecondary || "#ffffff",
   },
 });

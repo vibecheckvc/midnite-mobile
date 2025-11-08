@@ -14,38 +14,108 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  console.log("✅ AuthProvider rendered, loading:", loading);
+
   /* ==========================
      INITIAL SESSION + LISTENER
   ========================== */
   useEffect(() => {
+    let subscription = null;
+    let mounted = true;
+
+    // Check if Supabase has initialization error
+    if (supabase.hasError) {
+      console.error("❌ Supabase not initialized:", supabase.getError());
+      if (mounted) {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Safely get initial session
     const getInitialSession = async () => {
       try {
+        // Double-check supabase.auth exists
+        if (!supabase || !supabase.auth) {
+          console.warn("⚠️ Supabase auth not available");
+          setLoading(false);
+          return;
+        }
+
         const {
           data: { session },
           error,
         } = await supabase.auth.getSession();
-        if (error) console.error("Error getting session:", error);
-        setSession(session);
-        setUser(session?.user ?? null);
+
+        if (error) {
+          console.error("Error getting session:", error.message || error);
+          // Don't crash on any Supabase errors
+        } else {
+          if (mounted) {
+            setSession(session);
+            setUser(session?.user ?? null);
+          }
+        }
       } catch (error) {
-        console.error("Error in getInitialSession:", error);
+        console.error("Error in getInitialSession:", error.message || error);
+        // Never crash - just log and continue
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     getInitialSession();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state change:", event);
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Safely set up auth state listener
+    try {
+      if (
+        supabase &&
+        supabase.auth &&
+        typeof supabase.auth.onAuthStateChange === "function"
+      ) {
+        const result = supabase.auth.onAuthStateChange((event, session) => {
+          try {
+            console.log("Auth state change:", event);
+            if (mounted) {
+              setSession(session);
+              setUser(session?.user ?? null);
+              setLoading(false);
+            }
+          } catch (error) {
+            console.error("Error in auth state change handler:", error);
+          }
+        });
 
-    return () => subscription.unsubscribe();
+        // Handle different return formats from onAuthStateChange
+        if (result?.data?.subscription) {
+          subscription = result.data.subscription;
+        } else if (result?.subscription) {
+          subscription = result.subscription;
+        } else if (result && typeof result.unsubscribe === "function") {
+          subscription = result;
+        }
+      } else {
+        console.warn("⚠️ Supabase auth.onAuthStateChange not available");
+      }
+    } catch (error) {
+      console.error("Error setting up auth listener:", error.message || error);
+      if (mounted) {
+        setLoading(false);
+      }
+    }
+
+    return () => {
+      mounted = false;
+      try {
+        if (subscription && typeof subscription.unsubscribe === "function") {
+          subscription.unsubscribe();
+        }
+      } catch (error) {
+        console.error("Error unsubscribing:", error);
+      }
+    };
   }, []);
 
   /* ==========================
@@ -55,6 +125,23 @@ export const AuthProvider = ({ children }) => {
   // 🚀 Sign up (instant, no email confirmation)
   const signUp = async (email, password, username) => {
     try {
+      // Check if Supabase is properly configured
+      if (supabase.hasError) {
+        const configError = supabase.getError();
+        console.error(
+          "❌ Sign-up failed - Supabase not configured:",
+          configError
+        );
+        return {
+          data: null,
+          error: {
+            message: "App configuration error. Please contact support.",
+            details: configError?.message || "Supabase credentials missing",
+          },
+        };
+      }
+
+      console.log("🔍 Attempting sign-up for:", email);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -63,7 +150,29 @@ export const AuthProvider = ({ children }) => {
           data: { username },
         },
       });
-      if (error) throw error;
+
+      if (error) {
+        console.error("❌ Sign-up error:", error.message, error);
+        // Check if it's a network error
+        if (
+          error.message?.includes("network") ||
+          error.message?.includes("fetch") ||
+          error.message?.includes("Failed")
+        ) {
+          console.error(
+            "❌ Network error detected - this might mean Supabase URL is incorrect or unreachable"
+          );
+          return {
+            data: null,
+            error: {
+              message:
+                "Network request failed. Please check your internet connection and try again.",
+              details: error.message,
+            },
+          };
+        }
+        throw error;
+      }
 
       // If Supabase instantly returns a session (it will)
       if (data?.session) {
@@ -74,7 +183,7 @@ export const AuthProvider = ({ children }) => {
 
       return { data, error: null };
     } catch (error) {
-      console.error("Sign-up error:", error.message);
+      console.error("Sign-up error (catch):", error.message, error);
       return { data: null, error };
     }
   };
@@ -82,11 +191,50 @@ export const AuthProvider = ({ children }) => {
   // 🚀 Sign in
   const signIn = async (email, password) => {
     try {
+      // Check if Supabase is properly configured
+      if (supabase.hasError) {
+        const configError = supabase.getError();
+        console.error(
+          "❌ Sign-in failed - Supabase not configured:",
+          configError
+        );
+        return {
+          data: null,
+          error: {
+            message: "App configuration error. Please contact support.",
+            details: configError?.message || "Supabase credentials missing",
+          },
+        };
+      }
+
+      console.log("🔍 Attempting sign-in for:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
+
+      if (error) {
+        console.error("❌ Sign-in error:", error.message, error);
+        // Check if it's a network error
+        if (
+          error.message?.includes("network") ||
+          error.message?.includes("fetch") ||
+          error.message?.includes("Failed")
+        ) {
+          console.error(
+            "❌ Network error detected - this might mean Supabase URL is incorrect or unreachable"
+          );
+          return {
+            data: null,
+            error: {
+              message:
+                "Network request failed. Please check your internet connection and try again.",
+              details: error.message,
+            },
+          };
+        }
+        throw error;
+      }
 
       if (data?.session) {
         setSession(data.session);
@@ -96,7 +244,7 @@ export const AuthProvider = ({ children }) => {
 
       return { data, error: null };
     } catch (error) {
-      console.error("Sign-in error:", error.message);
+      console.error("Sign-in error (catch):", error.message, error);
       return { data: null, error };
     } finally {
       setLoading(false);
