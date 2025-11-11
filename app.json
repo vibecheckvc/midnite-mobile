@@ -19,7 +19,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "UIAppFonts": []
       },
-      "buildNumber": "13",
+      "buildNumber": "15",
       "icon": "./assets/midnite-icon.png"
     },
     "android": {
