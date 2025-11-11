@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Animated,
   Dimensions,
@@ -26,7 +25,7 @@ const { width } = Dimensions.get("window");
 export default function EventsScreen() {
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
-  const [selectedFilter, setSelectedFilter] = useState("All");
+  const [selectedFilter, setSelectedFilter] = useState("Upcoming");
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -35,7 +34,7 @@ export default function EventsScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { user } = useAuth();
 
-  const filters = ["All", "Today", "This Week", "My Events"];
+  const filters = ["Upcoming", "My Events", "Past"];
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -96,22 +95,18 @@ export default function EventsScreen() {
   const updateFilteredEvents = async () => {
     try {
       let filtered = events;
+      const now = new Date();
 
       switch (selectedFilter) {
-        case "Today":
-          const { data: todayData } = await eventsService.getTodayEvents();
-          filtered = todayData || [];
+        case "Upcoming":
+          filtered = events.filter((e) => new Date(e.date) >= now);
           break;
-        case "This Week":
-          const { data: weekData } = await eventsService.getThisWeekEvents();
-          filtered = weekData || [];
+        case "Past":
+          filtered = events.filter((e) => new Date(e.date) < now);
           break;
         case "My Events":
           if (user) {
-            const { data: userData } = await eventsService.getEventsByUser(
-              user.id
-            );
-            filtered = userData || [];
+            filtered = events.filter((e) => e.user_id === user.id);
           } else {
             filtered = [];
           }
@@ -140,9 +135,28 @@ export default function EventsScreen() {
       weekday: "short",
       month: "short",
       day: "numeric",
+    });
+  };
+
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const formatTimeAgo = (dateInput) => {
+    const d = new Date(dateInput);
+    const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (diff < 60) return `${diff}s`;
+    const m = Math.floor(diff / 60);
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    const days = Math.floor(h / 24);
+    if (days < 7) return `${days}d`;
+    return d.toLocaleDateString();
   };
 
   const isEventOwner = (eventUserId) => {
@@ -198,154 +212,127 @@ export default function EventsScreen() {
         },
       ]}
     >
-      {/* Event Header */}
-      <View style={styles.eventHeader}>
-        <View style={styles.eventInfo}>
-          <Text style={styles.eventTitle}>{item.title}</Text>
-          <Text style={styles.eventDate}>{formatDate(item.date)}</Text>
-        </View>
-        {isEventOwner(item.user_id) && (
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteEvent(item.id)}
-          >
-            <Ionicons name="trash-outline" size={20} color={colors.red} />
-          </TouchableOpacity>
-        )}
-      </View>
-
       {/* Event Image */}
-      <View style={styles.eventImageContainer}>
-        {item.image_url ? (
-          <Image
-            source={{ uri: item.image_url }}
-            style={styles.eventImage}
-            resizeMode="cover"
-            onError={(error) => {
-              console.log(
-                "Image load error for event:",
-                item.id,
-                "URL:",
-                item.image_url,
-                "Error:",
-                error
-              );
-            }}
-            onLoad={() => {
-              console.log(
-                "Image loaded successfully for event:",
-                item.id,
-                "URL:",
-                item.image_url
-              );
-            }}
-          />
-        ) : (
-          <LinearGradient
-            colors={colors.purpleGradient}
-            style={styles.eventImage}
-          >
-            <Ionicons name="car-sport" size={40} color={colors.textPrimary} />
-            <Text style={styles.eventImageText}>Event</Text>
-          </LinearGradient>
-        )}
-      </View>
-
-      {/* Event Details */}
-      <View style={styles.eventDetails}>
-        {item.location && (
-          <View style={styles.detailRow}>
-            <Ionicons
-              name="location-outline"
-              size={16}
-              color={colors.textMuted}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => handleViewDetails(item)}
+      >
+        <View style={styles.eventImageContainer}>
+          {item.image_url ? (
+            <Image
+              source={{ uri: item.image_url }}
+              style={styles.eventImage}
+              resizeMode="cover"
             />
-            <Text style={styles.detailText}>{item.location}</Text>
+          ) : (
+            <LinearGradient
+              colors={colors.purpleGradient}
+              style={styles.eventImage}
+            >
+              <Ionicons name="calendar" size={40} color={colors.textPrimary} />
+            </LinearGradient>
+          )}
+          {/* Date Pill */}
+          <View style={styles.datePill}>
+            <Text style={styles.datePillMonth}>
+              {new Date(item.date).toLocaleDateString(undefined, { month: "short" }).toUpperCase()}
+            </Text>
+            <Text style={styles.datePillDay}>
+              {new Date(item.date).getDate()}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      {/* Event Content */}
+      <View style={styles.eventContent}>
+        {/* Header Row */}
+        <View style={styles.eventHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.eventTitle} numberOfLines={2}>
+              {item.title}
+            </Text>
+            <View style={styles.metaRow}>
+              <Ionicons name="time-outline" size={14} color={colors.textMuted} />
+              <Text style={styles.metaText}>{formatTime(item.date)}</Text>
+              <View style={styles.dot} />
+              <Text style={styles.metaText}>{formatTimeAgo(item.created_at)}</Text>
+            </View>
+          </View>
+          {isEventOwner(item.user_id) && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteEvent(item.id)}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.red} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Location */}
+        {item.location && (
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={16} color={colors.purple} />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {item.location}
+            </Text>
           </View>
         )}
-        <View style={styles.detailRow}>
-          <Ionicons name="time-outline" size={16} color={colors.textMuted} />
-          <Text style={styles.detailText}>
-            Created {new Date(item.created_at).toLocaleDateString()}
+
+        {/* Description Preview */}
+        {item.description && (
+          <Text style={styles.eventDescription} numberOfLines={2}>
+            {item.description}
           </Text>
-        </View>
-      </View>
+        )}
 
-      {/* Action Buttons */}
-      <View style={styles.eventActionsContainer}>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => handleViewDetails(item)}
-        >
-          <LinearGradient
-            colors={colors.purpleGradient}
-            style={styles.primaryButtonGradient}
+        {/* Action Bar */}
+        <View style={styles.actionBar}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleViewDetails(item)}
           >
-            <Ionicons
-              name="calendar-outline"
-              size={18}
-              color={colors.textPrimary}
-            />
-            <Text style={styles.primaryButtonText}>View Details</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => handleShareEvent(item)}
-        >
-          <Ionicons name="share-outline" size={18} color={colors.purple} />
-          <Text style={styles.secondaryButtonText}>Share</Text>
-        </TouchableOpacity>
+            <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
+            <Text style={styles.actionText}>Details</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleShareEvent(item)}
+          >
+            <Ionicons name="share-outline" size={18} color={colors.textMuted} />
+            <Text style={styles.actionText}>Share</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </Animated.View>
   );
 
+  const Header = () => (
+    <View style={styles.topBar}>
+      <View style={styles.segmented}>
+        {filters.map((filter) => (
+          <TouchableOpacity
+            key={filter}
+            onPress={() => setSelectedFilter(filter)}
+            style={[styles.segButton, selectedFilter === filter && styles.segActive]}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.segText, selectedFilter === filter && styles.segTextActive]}>
+              {filter}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Events</Text>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Ionicons name="add-circle" size={24} color={colors.red} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Filter Tabs */}
-      <View style={styles.filterContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterContent}
-        >
-          {filters.map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterButton,
-                selectedFilter === filter && styles.activeFilterButton,
-              ]}
-              onPress={() => setSelectedFilter(filter)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  selectedFilter === filter && styles.activeFilterText,
-                ]}
-              >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Events List */}
+      {/* Events List with sticky header */}
       <FlatList
         data={filteredEvents}
+        ListHeaderComponent={Header}
+        stickyHeaderIndices={[0]}
         renderItem={({ item, index }) => (
           <EventCard item={item} index={index} />
         )}
@@ -376,6 +363,11 @@ export default function EventsScreen() {
             </Text>
           </View>
         }
+        removeClippedSubviews={true}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
       />
 
       {/* Create Event FAB */}
@@ -415,10 +407,7 @@ export default function EventsScreen() {
           </View>
 
           {selectedEvent && (
-            <ScrollView
-              style={styles.modalContent}
-              showsVerticalScrollIndicator={false}
-            >
+            <View style={styles.modalContent}>
               {/* Event Image */}
               <View style={styles.modalImageContainer}>
                 {selectedEvent.image_url ? (
@@ -433,11 +422,10 @@ export default function EventsScreen() {
                     style={styles.modalImage}
                   >
                     <Ionicons
-                      name="car-sport"
+                      name="calendar"
                       size={60}
                       color={colors.textPrimary}
                     />
-                    <Text style={styles.modalImageText}>Event</Text>
                   </LinearGradient>
                 )}
               </View>
@@ -447,9 +435,12 @@ export default function EventsScreen() {
                 <Text style={styles.modalEventTitle}>
                   {selectedEvent.title}
                 </Text>
-                <Text style={styles.modalEventDate}>
-                  {formatDate(selectedEvent.date)}
-                </Text>
+                <View style={styles.modalDateRow}>
+                  <Ionicons name="calendar-outline" size={18} color={colors.purple} />
+                  <Text style={styles.modalEventDate}>
+                    {formatDate(selectedEvent.date)} at {formatTime(selectedEvent.date)}
+                  </Text>
+                </View>
 
                 {selectedEvent.location && (
                   <View style={styles.modalDetailRow}>
@@ -464,22 +455,10 @@ export default function EventsScreen() {
                   </View>
                 )}
 
-                <View style={styles.modalDetailRow}>
-                  <Ionicons
-                    name="time-outline"
-                    size={20}
-                    color={colors.purple}
-                  />
-                  <Text style={styles.modalDetailText}>
-                    Created{" "}
-                    {new Date(selectedEvent.created_at).toLocaleDateString()}
-                  </Text>
-                </View>
-
                 {selectedEvent.description && (
                   <View style={styles.modalDescriptionContainer}>
                     <Text style={styles.modalDescriptionTitle}>
-                      Description
+                      About this event
                     </Text>
                     <Text style={styles.modalDescription}>
                       {selectedEvent.description}
@@ -495,7 +474,7 @@ export default function EventsScreen() {
                   onPress={() => handleShareEvent(selectedEvent)}
                 >
                   <LinearGradient
-                    colors={colors.blueGradient}
+                    colors={colors.purpleGradient}
                     style={styles.modalShareButtonGradient}
                   >
                     <Ionicons
@@ -507,7 +486,7 @@ export default function EventsScreen() {
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
-            </ScrollView>
+            </View>
           )}
         </View>
       </Modal>
@@ -520,169 +499,128 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
+  topBar: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 6, backgroundColor: colors.background },
+  segmented: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: colors.cardBackground,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: colors.textPrimary,
-  },
-  headerActions: {
-    flexDirection: "row",
-  },
-  headerButton: {
-    padding: 4,
-  },
-  filterContainer: {
-    backgroundColor: colors.cardBackground,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.accent,
-  },
-  filterContent: {
-    paddingHorizontal: 16,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 12,
     backgroundColor: colors.inputBackground,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    overflow: "hidden",
   },
-  activeFilterButton: {
-    backgroundColor: colors.purple,
-  },
-  filterText: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: "500",
-  },
-  activeFilterText: {
-    color: colors.textPrimary,
-  },
+  segButton: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 10 },
+  segActive: { backgroundColor: colors.purple },
+  segText: { color: colors.textMuted, fontWeight: "700", fontSize: 14 },
+  segTextActive: { color: "#fff" },
   eventsContent: {
     padding: 16,
+    paddingBottom: 100,
   },
   eventCard: {
     backgroundColor: colors.cardBackground,
     borderRadius: 16,
     marginBottom: 16,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  eventImageContainer: {
+    position: "relative",
+    height: 160,
+    backgroundColor: colors.inputBackground,
+  },
+  eventImage: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  datePill: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.purple,
+  },
+  datePillMonth: {
+    color: colors.purple,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  datePillDay: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: 2,
+  },
+  eventContent: {
+    padding: 14,
   },
   eventHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    padding: 16,
-    paddingBottom: 0,
-  },
-  eventInfo: {
-    flex: 1,
-  },
-  deleteButton: {
-    padding: 4,
+    marginBottom: 10,
   },
   eventTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "800",
     color: colors.textPrimary,
     marginBottom: 4,
+    letterSpacing: -0.3,
   },
-  eventDate: {
-    fontSize: 14,
-    color: colors.purple,
-    fontWeight: "500",
+  metaRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  metaText: { color: colors.textMuted, fontSize: 12, marginLeft: 4 },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent, marginHorizontal: 6 },
+  deleteButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: colors.inputBackground,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: colors.inputBackground,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  locationText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginLeft: 6,
+    fontWeight: "600",
   },
   eventDescription: {
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
-    marginHorizontal: 16,
     marginBottom: 12,
   },
-  eventImageContainer: {
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  eventImage: {
-    height: 120,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  eventImageText: {
-    color: colors.textPrimary,
-    marginTop: 8,
-    fontSize: 14,
-  },
-  eventDetails: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  detailRow: {
+  actionBar: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  detailText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginLeft: 8,
-  },
-  eventActionsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: colors.accent,
+    paddingTop: 12,
   },
-  primaryButton: {
-    flex: 1,
-    marginRight: 12,
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  primaryButtonGradient: {
+  actionButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
+    marginRight: 18,
   },
-  primaryButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.textPrimary,
+  actionText: {
+    fontSize: 13,
+    color: colors.textMuted,
     marginLeft: 6,
-  },
-  secondaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  secondaryButtonText: {
-    fontSize: 12,
-    color: colors.purple,
-    marginLeft: 4,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   emptyContainer: {
     flex: 1,
@@ -692,7 +630,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "700",
     color: colors.textPrimary,
     marginTop: 16,
     marginBottom: 8,
@@ -744,7 +682,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "800",
     color: colors.textPrimary,
   },
   placeholder: {
@@ -752,9 +690,10 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     flex: 1,
+    paddingBottom: 30,
   },
   modalImageContainer: {
-    height: 200,
+    height: 240,
     marginBottom: 20,
   },
   modalImage: {
@@ -763,26 +702,32 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  modalImageText: {
-    color: colors.textPrimary,
-    marginTop: 8,
-    fontSize: 16,
-  },
   modalInfo: {
     paddingHorizontal: 20,
     marginBottom: 30,
   },
   modalEventTitle: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: "900",
     color: colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  modalDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: colors.inputBackground,
+    borderRadius: 10,
+    alignSelf: "flex-start",
   },
   modalEventDate: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.purple,
-    fontWeight: "600",
-    marginBottom: 20,
+    fontWeight: "700",
+    marginLeft: 8,
   },
   modalDetailRow: {
     flexDirection: "row",
@@ -790,9 +735,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalDetailText: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.textSecondary,
     marginLeft: 12,
+    fontWeight: "600",
   },
   modalDescriptionContainer: {
     marginTop: 20,
@@ -801,22 +747,22 @@ const styles = StyleSheet.create({
     borderTopColor: colors.accent,
   },
   modalDescriptionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "800",
     color: colors.textPrimary,
-    marginBottom: 12,
+    marginBottom: 10,
+    letterSpacing: -0.2,
   },
   modalDescription: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.textSecondary,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   modalActions: {
     paddingHorizontal: 20,
-    paddingBottom: 30,
   },
   modalShareButton: {
-    borderRadius: 25,
+    borderRadius: 14,
     overflow: "hidden",
   },
   modalShareButtonGradient: {
@@ -827,7 +773,7 @@ const styles = StyleSheet.create({
   },
   modalShareButtonText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
     color: colors.textPrimary,
     marginLeft: 8,
   },

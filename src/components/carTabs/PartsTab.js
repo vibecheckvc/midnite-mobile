@@ -173,6 +173,12 @@ export default function PartsTab({ car, user, supabase, onReload }) {
         keyExtractor={(x) => String(x.id)}
         renderItem={Item}
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        // Perf defaults
+        removeClippedSubviews={true}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
         refreshControl={
           <RefreshControl tintColor={RED} refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -249,13 +255,15 @@ const styles = StyleSheet.create({
   chip: {
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.18)",
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 999,
     backgroundColor: "rgba(255,255,255,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   chipOn: { backgroundColor: "rgba(177,15,46,0.25)", borderColor: "rgba(177,15,46,0.55)" },
-  chipTxt: { color: TEXT, fontSize: 12 },
+  chipTxt: { color: TEXT, fontSize: 12, fontWeight: "600", textAlign: "center" },
   iconBtn: {
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.18)",

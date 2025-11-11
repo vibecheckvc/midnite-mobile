@@ -10,6 +10,9 @@ import {
   Modal,
   TextInput,
   RefreshControl,
+  Dimensions,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { deleteRow, pickAndUploadPhoto, withUser } from "../../utils/supabaseHelpers";
@@ -29,6 +32,10 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
   const [caption, setCaption] = useState("");
   const [showCaption, setShowCaption] = useState(false);
   const [pendingUri, setPendingUri] = useState(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const screenWidth = Dimensions.get("window").width;
+  const viewerRef = React.useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -72,10 +79,10 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
   // Handles both image pick & upload via helper
   const handleUpload = async () => {
     try {
-      const { uri } = await pickAndUploadPhoto(supabase, car.id);
-      if (!uri) return;
+      const photoUrl = await pickAndUploadPhoto(supabase, car.id);
+      if (!photoUrl) return;
 
-      setPendingUri(uri);
+      setPendingUri(photoUrl);
       setCaption("");
       setShowCaption(true);
     } catch (err) {
@@ -109,7 +116,10 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
       );
 
       const { data, error } = await supabase.from(TABLE).insert(payload).select().single();
-      if (error) throw error;
+      
+      if (error) {
+        throw error;
+      }
 
       // Replace temp entry with actual record
       setRows((prev) => [data, ...prev.filter((r) => r.id !== temp.id)]);
@@ -136,8 +146,15 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
       },
     ]);
 
-  const Item = ({ item }) => (
-    <View style={styles.photoCard}>
+  const Item = ({ item, index }) => (
+    <TouchableOpacity
+      style={styles.photoCard}
+      activeOpacity={0.85}
+      onPress={() => {
+        setViewerIndex(index);
+        setViewerOpen(true);
+      }}
+    >
       <Image source={{ uri: item.url }} style={styles.photo} resizeMode="cover" />
       {!!item.caption && (
         <Text numberOfLines={1} style={styles.caption}>
@@ -147,7 +164,7 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
       <TouchableOpacity onPress={() => remove(item)} style={styles.del}>
         <Ionicons name="trash-outline" size={18} color="#fff" />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -157,8 +174,14 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
         keyExtractor={(x) => String(x.id)}
         numColumns={3}
         columnWrapperStyle={{ gap: 8, paddingHorizontal: 16 }}
-        renderItem={Item}
+  renderItem={({ item, index }) => <Item item={item} index={index} />}
         contentContainerStyle={{ gap: 8, paddingTop: 12, paddingBottom: 24 }}
+        // Perf defaults for grid
+        removeClippedSubviews={true}
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        windowSize={9}
+        updateCellsBatchingPeriod={50}
         refreshControl={
           <RefreshControl tintColor={RED} refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -171,6 +194,59 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
           </View>
         }
       />
+
+      {/* Fullscreen viewer */}
+      <Modal
+        visible={viewerOpen}
+        animationType="fade"
+        transparent={false}
+        presentationStyle="fullScreen"
+        statusBarTranslucent
+        onRequestClose={() => setViewerOpen(false)}
+      >
+        <SafeAreaView style={styles.viewerWrap}>
+          <StatusBar barStyle="light-content" backgroundColor="#000" translucent />
+          <View style={styles.viewerHeader}>
+            <TouchableOpacity onPress={() => setViewerOpen(false)} style={styles.viewerClose}>
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.viewerCounter}>
+              {viewerIndex + 1} / {rows.length}
+            </Text>
+            <View style={{ width: 40 }} />
+          </View>
+
+          <FlatList
+            ref={viewerRef}
+            data={rows}
+            keyExtractor={(x) => String(x.id)}
+            horizontal
+            pagingEnabled
+            initialScrollIndex={viewerIndex}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+              if (!Number.isNaN(idx)) setViewerIndex(idx);
+            }}
+            getItemLayout={(_, index) => ({ length: screenWidth, offset: screenWidth * index, index })}
+            renderItem={({ item }) => (
+              <View style={{ width: screenWidth, flex: 1, backgroundColor: "#000" }}>
+                <Image
+                  source={{ uri: item.url }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="contain"
+                />
+                {!!item.caption && (
+                  <View style={styles.viewerCaptionBar}>
+                    <Text numberOfLines={2} style={styles.viewerCaption}>
+                      {item.caption}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          />
+        </SafeAreaView>
+      </Modal>
 
       <Modal
         visible={showCaption}
@@ -212,6 +288,35 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: BG },
+  viewerWrap: { flex: 1, backgroundColor: "#000" },
+  viewerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  viewerClose: {
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    borderRadius: 999,
+    padding: 6,
+  },
+  viewerCounter: { color: "#fff", fontWeight: "700" },
+  viewerCaptionBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 12,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
+  },
+  viewerCaption: { color: TEXT, fontSize: 13 },
   primary: {
     backgroundColor: RED,
     paddingVertical: 12,

@@ -16,6 +16,48 @@ async function getFollowCounts(userId) {
   return { followers: followers ?? 0, following: following ?? 0 };
 }
 
+/** Get list of followers (with profile data) */
+async function getFollowersList(userId) {
+  const { data, error } = await supabase
+    .from("follows")
+    .select(`
+      follower_id,
+      created_at,
+      follower:profiles!follows_follower_id_fkey(
+        id,
+        username,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq("following_id", userId)
+    .order("created_at", { ascending: false });
+  
+  if (error) return { data: null, error };
+  return { data: data.map(f => f.follower), error: null };
+}
+
+/** Get list of following (with profile data) */
+async function getFollowingList(userId) {
+  const { data, error } = await supabase
+    .from("follows")
+    .select(`
+      following_id,
+      created_at,
+      following:profiles!follows_following_id_fkey(
+        id,
+        username,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq("follower_id", userId)
+    .order("created_at", { ascending: false });
+  
+  if (error) return { data: null, error };
+  return { data: data.map(f => f.following), error: null };
+}
+
 /** Is A following B? */
 async function isFollowing(followerId, followingId) {
   const { data, error } = await supabase
@@ -110,6 +152,8 @@ function subscribeToRelationship(followerId, followingId, onChange) {
 
 export const communityService = {
   getFollowCounts,
+  getFollowersList,
+  getFollowingList,
   isFollowing,
   followUser,
   unfollowUser,

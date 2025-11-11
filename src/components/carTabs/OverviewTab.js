@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, StyleSheet, RefreshControl, ScrollView } from "react-native";
+import { View, Text, StyleSheet, RefreshControl, ScrollView, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { deleteRow, pickAndUploadPhoto, toLocalISODate, withUser } from "../../utils/supabaseHelpers";
 
@@ -101,16 +101,21 @@ export default function OverviewTab({ car, supabase, user }) {
         </Text>
       </View>
 
-      <View style={styles.grid}>
-        <Stat icon="construct-outline" label="Parts" value={counts.parts} />
-        <Stat icon="hammer-outline" label="Maintenance" value={counts.maintenance} />
-        <Stat
-          icon="checkbox-outline"
-          label="Tasks"
-          value={`${counts.tasksAll - counts.tasksOpen}/${counts.tasksAll}`}
-        />
-        <Stat icon="images-outline" label="Photos" value={counts.photos} />
-        <Stat icon="time-outline" label="Timeline" value={counts.timeline} />
+      {/* Structured rows */}
+      <View style={styles.rowsWrap}>
+        <View style={styles.rowTop}>
+          <Stat icon="construct-outline" label="Parts" value={counts.parts} />
+          <Stat icon="hammer-outline" label="Maintenance" value={counts.maintenance} />
+          <Stat
+            icon="checkbox-outline"
+            label="Tasks"
+            value={`${counts.tasksAll - counts.tasksOpen}/${counts.tasksAll}`}
+          />
+        </View>
+        <View style={styles.rowBottom}>
+          <Stat icon="images-outline" label="Photos" value={counts.photos} />
+          <Stat icon="time-outline" label="Timeline" value={counts.timeline} />
+        </View>
       </View>
 
       <View style={styles.glassCard}>
@@ -130,7 +135,7 @@ function Stat({ icon, label, value }) {
         <Ionicons name={icon} size={20} color={TEXT} />
       </View>
       <Text style={styles.statValue}>{String(value)}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statLabel} numberOfLines={1} ellipsizeMode="tail">{label}</Text>
     </View>
   );
 }
@@ -151,9 +156,11 @@ const styles = StyleSheet.create({
   meta: { color: MUTED, marginTop: 6 },
   sectionTitle: { color: TEXT, fontWeight: "800", marginBottom: 8 },
   body: { color: MUTED, lineHeight: 20 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, paddingHorizontal: 16, marginVertical: 8 },
+  rowsWrap: { paddingHorizontal: 16, marginVertical: 8 },
+  rowTop: { flexDirection: "row", gap: 12, marginBottom: 12 },
+  rowBottom: { flexDirection: "row", gap: 12 },
   statCard: {
-    width: "31%",
+    flex: 1,
     minWidth: 96,
     backgroundColor: CARD,
     borderWidth: 1,

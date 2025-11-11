@@ -1,6 +1,7 @@
 // services/profileService.js
 import { supabase } from "../lib/supabase";
 import * as ImageManipulator from "expo-image-manipulator";
+import * as FileSystem from "expo-file-system/legacy";
 
 export const profileService = {
   /**
@@ -58,17 +59,69 @@ export const profileService = {
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
       );
 
-      // 2️⃣ Convert processed image to Blob
-      const response = await fetch(manipulated.uri);
-      const blob = await response.blob();
+      // 2️⃣ Convert processed image to uploadable binary (FileSystem first for reliability)
+      let uploadData = null;
+
+      try {
+        const b64 = await FileSystem.readAsStringAsync(manipulated.uri, {
+          encoding: "base64",
+        });
+        
+        // Convert base64 to Uint8Array
+        if (typeof globalThis.atob === "function") {
+          const binaryString = globalThis.atob(b64);
+          const len = binaryString.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+          uploadData = bytes;
+        } else if (typeof Buffer !== "undefined") {
+          uploadData = new Uint8Array(Buffer.from(b64, "base64"));
+        }
+      } catch (fileErr) {
+        console.warn("FileSystem read failed, trying fetch:", fileErr);
+        uploadData = null;
+      }
+
+      // Fallback: fetch + blob/arrayBuffer if FileSystem failed
+      if (!uploadData) {
+        try {
+          const response = await fetch(manipulated.uri);
+          
+          try {
+            if (typeof response.blob === "function") {
+              uploadData = await response.blob();
+            }
+          } catch (blobErr) {
+            uploadData = null;
+          }
+
+          if (!uploadData) {
+            try {
+              if (typeof response.arrayBuffer === "function") {
+                const ab = await response.arrayBuffer();
+                uploadData = ab instanceof ArrayBuffer ? new Uint8Array(ab) : new Uint8Array(ab.buffer || ab);
+              }
+            } catch (abErr) {
+              uploadData = null;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn("Fetch fallback failed:", fetchErr);
+          uploadData = null;
+        }
+      }
+
+      if (!uploadData) {
+        throw new Error("Failed to read image for upload.");
+      }
 
       // 3️⃣ Generate unique filename
       const filename = `avatar_${userId}_${Date.now()}.jpg`;
 
       // 4️⃣ Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: uploadResult, error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filename, blob, {
+        .upload(filename, uploadData, {
           contentType: "image/jpeg",
           upsert: true,
         });

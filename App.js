@@ -3,6 +3,7 @@ import React, { useEffect, Component } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { StatusBar } from "expo-status-bar";
+import { colors } from "./src/constants/colors";
 import { StyleSheet, Platform, View, Text } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Font from "expo-font";
@@ -58,8 +59,8 @@ function AppNavigator() {
 
     return (
       <NavigationContainer>
-        <StatusBar style="light" backgroundColor="#000000" />
-        <Stack.Navigator screenOptions={{ animation: "fade_from_bottom" }}>
+        <StatusBar style="light" backgroundColor={colors.primary || "#000000"} />
+        <Stack.Navigator screenOptions={{ animation: "fade_from_bottom", cardStyle: { backgroundColor: colors.primary } }}>
           {user ? (
             <>
               <Stack.Screen

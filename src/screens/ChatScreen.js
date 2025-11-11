@@ -108,6 +108,12 @@ export default function ChatScreen({ route, navigation }) {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        // Performance defaults for chat lists
+        removeClippedSubviews={true}
+        initialNumToRender={20}
+        maxToRenderPerBatch={20}
+        windowSize={10}
+        updateCellsBatchingPeriod={50}
       />
 
       <View style={styles.inputBar}>

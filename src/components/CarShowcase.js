@@ -58,6 +58,11 @@ export default function CarShowcase({ cars, onSelect, title = "Build Showcase" }
             </LinearGradient>
           </TouchableOpacity>
         )}
+        removeClippedSubviews={true}
+        initialNumToRender={4}
+        maxToRenderPerBatch={6}
+        windowSize={5}
+        updateCellsBatchingPeriod={50}
       />
     </View>
   );
@@ -67,39 +72,46 @@ const styles = StyleSheet.create({
   container: { width: "100%", marginTop: 20 },
   sectionTitle: {
     color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-    letterSpacing: 1,
-    marginLeft: 12,
-    marginBottom: 10,
+    fontWeight: "800",
+    fontSize: 17,
+    letterSpacing: -0.3,
+    marginLeft: 16,
+    marginBottom: 14,
   },
   cardWrapper: {
-    marginHorizontal: 10,
+    marginHorizontal: 8,
+    marginVertical: 4,
     borderRadius: 16,
     overflow: "hidden",
   },
   card: {
-    width: width * 0.6,
-    height: 160,
+    width: width * 0.65,
+    height: 180,
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#330000",
+    borderColor: "rgba(255,0,76,0.25)",
   },
   image: {
     width: "100%",
-    height: "75%",
+    height: "70%",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
   info: {
-    padding: 8,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: 12,
+    backgroundColor: "rgba(10,10,11,0.95)",
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
   },
-  carName: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  carSub: { color: "#999", fontSize: 12 },
+  carName: { 
+    color: "#fff", 
+    fontWeight: "700", 
+    fontSize: 15, 
+    letterSpacing: -0.2,
+    marginBottom: 2,
+  },
+  carSub: { color: "#8b8b90", fontSize: 12, fontWeight: "500" },
   emptyContainer: { alignItems: "center", marginTop: 20 },
   emptyText: { color: "#777", fontSize: 13, textAlign: "center" },
 });

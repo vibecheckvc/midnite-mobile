@@ -1,4 +1,5 @@
 import React from "react";
+import { Platform } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../constants/colors";
@@ -33,14 +34,18 @@ export default function MainTabs() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: colors.purple,
+        // use red accents for active tab
+        tabBarActiveTintColor: colors.red,
+        // show icons only per design (no labels)
+        tabBarShowLabel: false,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           backgroundColor: colors.cardBackground,
           borderTopColor: colors.accent,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          // give some extra bottom padding to avoid cutoff on devices
+          height: 64,
+          paddingBottom: Platform.OS === "ios" ? 18 : 8,
           paddingTop: 8,
         },
         tabBarLabelStyle: {

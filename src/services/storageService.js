@@ -13,8 +13,18 @@ export const storageService = {
         encoding: "base64",
       });
 
-      // Convert base64 to binary data
-      const binaryData = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      // Convert base64 to binary data (same pattern as blob fix)
+      let binaryData = null;
+      if (typeof globalThis.atob === "function") {
+        const binaryString = globalThis.atob(base64);
+        const len = binaryString.length;
+        binaryData = new Uint8Array(len);
+        for (let i = 0; i < len; i++) binaryData[i] = binaryString.charCodeAt(i);
+      } else if (typeof Buffer !== "undefined") {
+        binaryData = new Uint8Array(Buffer.from(base64, "base64"));
+      } else {
+        throw new Error("Unable to decode base64: atob and Buffer not available");
+      }
 
       // Upload to Supabase Storage using binary data
       const { data, error } = await supabase.storage

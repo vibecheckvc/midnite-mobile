@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: colors.purple,
+    borderColor: colors.red,
     borderTopColor: "transparent",
     marginBottom: 16,
     justifyContent: "center",
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.purple,
+    backgroundColor: colors.red,
   },
   loadingText: {
     color: colors.textMuted,
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors?.purple || "#8b5cf6",
+    backgroundColor: colors?.red || "#ef4444",
     marginHorizontal: 4,
   },
   logoFallback: {

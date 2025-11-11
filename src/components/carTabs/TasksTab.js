@@ -170,6 +170,12 @@ export default function TasksTab({ car, user, supabase, onReload }) {
         keyExtractor={(x) => String(x.id)}
         renderItem={Item}
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        // Performance: lightweight defaults for smoother long lists
+        removeClippedSubviews={true}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        updateCellsBatchingPeriod={50}
         refreshControl={
           <RefreshControl tintColor={RED} refreshing={refreshing} onRefresh={onRefresh} />
         }

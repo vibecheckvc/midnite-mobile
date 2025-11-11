@@ -1,13 +1,14 @@
 export const colors = {
   // Primary colors - Black minimalist theme
   primary: "#000000", // Pure black background
-  secondary: "#111111", // Very dark grey
-  accent: "#1a1a1a", // Slightly lighter dark grey
+  secondary: "#0a0a0a", // Very dark grey
+  accent: "#0f0f0f", // Slightly lighter dark grey
 
-  // Accent colors - Red and Purple
-  purple: "#8b5cf6", // Purple gradient
-  purpleDark: "#7c3aed", // Darker purple
-  red: "#ef4444", // Red for buttons and accents
+  // Accent colors - deep crimson lawless palette
+  // Keep legacy purple keys but point them to crimson so the whole app becomes lawless-accented
+  purple: "#b10f2e", // alias to crimson
+  purpleDark: "#7a0018", // darker crimson alias
+  red: "#b10f2e", // Crimson for buttons and accents
   green: "#10b981", // Green for success states
   cyan: "#06b6d4", // Light blue/cyan
 
@@ -18,8 +19,12 @@ export const colors = {
 
   // Background colors - Black minimalist
   background: "#000000", // Pure black background
-  cardBackground: "#111111", // Dark grey card backgrounds
-  inputBackground: "#1a1a1a", // Input backgrounds
+  cardBackground: "#0a0a0a", // Dark grey card backgrounds (subtle)
+  inputBackground: "#0f0f0f", // Input backgrounds
+
+  // Lawless-specific tokens
+  edge: "rgba(177,15,46,0.12)",
+  highlight: "rgba(177,15,46,0.18)",
 
   // Status colors
   success: "#10b981",
@@ -28,14 +33,15 @@ export const colors = {
   info: "#3b82f6",
 
   // Gradients - Red and Purple theme
-  purpleGradient: ["#8b5cf6", "#7c3aed"],
-  redGradient: ["#ef4444", "#dc2626"],
-  darkGradient: ["#000000", "#111111"],
+  purpleGradient: ["#b10f2e", "#7a0018"],
+  redGradient: ["#b10f2e", "#7a0018"],
+  darkGradient: ["#000000", "#0a0a0a"],
   blueGradient: ["#06b6d4", "#3b82f6"],
 };
 
 export const gradients = {
-  purple: ["#8b5cf6", "#7c3aed"],
+  // keep name for compatibility but use red gradient
+  purple: ["#ef4444", "#dc2626"],
   red: ["#ef4444", "#dc2626"],
   dark: ["#000000", "#111111"],
   blue: ["#06b6d4", "#3b82f6"],
