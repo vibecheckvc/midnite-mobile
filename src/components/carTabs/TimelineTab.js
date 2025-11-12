@@ -69,7 +69,18 @@ export default function TimelineTab({ car, user, supabase, onReload }) {
     setRefreshing(false);
   };
 
+  const isOwner = user?.id && car?.user_id === user.id;
+
+  const guard = () => {
+    if (!isOwner) {
+      Alert.alert("Read Only", "You can only modify the timeline for your own car.");
+      return false;
+    }
+    return true;
+  };
+
   const openAdd = () => {
+    if (!guard()) return;
     setEditing(null);
     setF({
       title: "",
@@ -80,6 +91,7 @@ export default function TimelineTab({ car, user, supabase, onReload }) {
   };
 
   const openEdit = (r) => {
+    if (!guard()) return;
     setEditing(r);
     setF({
       title: r.title || "",
@@ -90,6 +102,7 @@ export default function TimelineTab({ car, user, supabase, onReload }) {
   };
 
   const save = async () => {
+    if (!guard()) return;
     if (!f.title.trim()) return Alert.alert("Missing", "Title required.");
     if (!f.date) return Alert.alert("Missing", "Date required.");
 
@@ -126,7 +139,9 @@ export default function TimelineTab({ car, user, supabase, onReload }) {
     }
   };
 
-  const del = (id) =>
+  const del = (id) => {
+    if (!guard()) return;
+    return (
     Alert.alert("Delete timeline entry?", "This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       {
@@ -137,19 +152,25 @@ export default function TimelineTab({ car, user, supabase, onReload }) {
           onReload?.();
         },
       },
-    ]);
+    ])
+    );
+  };
 
   const Item = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.date}>{new Date(item.date).toLocaleDateString()}</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
-            <Ionicons name="create-outline" size={18} color={TEXT} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => del(item.id)} style={styles.iconBtnDanger}>
-            <Ionicons name="trash-outline" size={18} color="#fff" />
-          </TouchableOpacity>
+          {isOwner && (
+            <>
+              <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
+                <Ionicons name="create-outline" size={18} color={TEXT} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => del(item.id)} style={styles.iconBtnDanger}>
+                <Ionicons name="trash-outline" size={18} color="#fff" />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
       <Text style={styles.title}>{item.title}</Text>
@@ -168,15 +189,17 @@ export default function TimelineTab({ car, user, supabase, onReload }) {
           <RefreshControl tintColor={RED} refreshing={refreshing} onRefresh={onRefresh} />
         }
       />
-      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-        <TouchableOpacity onPress={openAdd} style={styles.primary}>
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text style={styles.primaryTxt}>Add Milestone</Text>
-        </TouchableOpacity>
-      </View>
+      {isOwner && (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+          <TouchableOpacity onPress={openAdd} style={styles.primary}>
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={styles.primaryTxt}>Add Milestone</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Modal
-        visible={show}
+        visible={show && isOwner}
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setShow(false)}

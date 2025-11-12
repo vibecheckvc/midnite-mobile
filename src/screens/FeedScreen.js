@@ -8,7 +8,7 @@ import {
   Animated,
   Dimensions,
   Image,
-  FlatList,
+  SectionList,
   RefreshControl,
   Modal,
   TextInput,
@@ -35,6 +35,7 @@ export default function FeedScreen({ navigation }) {
   const [feedData, setFeedData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("For You");
+  const [contentFilter, setContentFilter] = useState("all"); // all | events | builds
   const [loading, setLoading] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [viewMode, setViewMode] = useState("media"); // media | compact
@@ -45,6 +46,11 @@ export default function FeedScreen({ navigation }) {
   const hiddenIds = useRef(new Set());
 
   const filters = ["For You", "Following"]; // simplified
+  const contentFilters = [
+    { key: "all", label: "All" },
+    { key: "events", label: "Events" },
+    { key: "builds", label: "Builds" },
+  ];
 
   useEffect(() => {
     if (user?.id) loadFeed();
@@ -53,22 +59,39 @@ export default function FeedScreen({ navigation }) {
       duration: 600,
       useNativeDriver: true,
     }).start();
-  }, [user, selectedFilter]);
+  }, [user, selectedFilter, contentFilter]);
 
 
   const loadFeed = async () => {
     setLoading(true);
-    const { data } = await fetchUnifiedFeed(user.id, selectedFilter);
-    // optional local sort
-    const sorted = (data || []).slice().sort((a, b) => {
-      if (sortMode === "Newest") {
-        return new Date(b.created_at) - new Date(a.created_at);
-      }
-      return 0; // already prioritized in service
-    });
-    // filter hidden ones
-    setFeedData(sorted.filter((i) => !hiddenIds.current.has(`${i.type}:${i.id}`)));
-    setLoading(false);
+    // When showing both, stage: load events first for fast paint, then merge builds
+    if (contentFilter === "all") {
+      const { data: eventsOnly } = await fetchUnifiedFeed(user.id, selectedFilter, "events");
+      const sortedEvents = (eventsOnly || []).slice().sort((a, b) => {
+        if (sortMode === "Newest") return new Date(b.created_at) - new Date(a.created_at);
+        return 0;
+      });
+      setFeedData(sortedEvents.filter((i) => !hiddenIds.current.has(`${i.type}:${i.id}`)));
+      setLoading(false);
+
+      // Merge builds in background
+      fetchUnifiedFeed(user.id, selectedFilter, "builds").then(({ data: buildsOnly }) => {
+        const combined = [...(eventsOnly || []), ...(buildsOnly || [])];
+        const sorted = combined.slice().sort((a, b) => {
+          if (sortMode === "Newest") return new Date(b.created_at) - new Date(a.created_at);
+          return 0;
+        });
+        setFeedData(sorted.filter((i) => !hiddenIds.current.has(`${i.type}:${i.id}`)));
+      });
+    } else {
+      const { data } = await fetchUnifiedFeed(user.id, selectedFilter, contentFilter);
+      const sorted = (data || []).slice().sort((a, b) => {
+        if (sortMode === "Newest") return new Date(b.created_at) - new Date(a.created_at);
+        return 0;
+      });
+      setFeedData(sorted.filter((i) => !hiddenIds.current.has(`${i.type}:${i.id}`)));
+      setLoading(false);
+    }
   };
 
   const onRefresh = async () => {
@@ -278,7 +301,7 @@ export default function FeedScreen({ navigation }) {
             onPress={() =>
               item.type === "build"
                 ? navigation.navigate("CarDetailScreen", { carId: item.id })
-                : navigation.navigate("EventsScreen", { eventId: item.id })
+                : navigation.navigate("Events", { eventId: item.id })
             }
           >
             <View>
@@ -383,6 +406,21 @@ export default function FeedScreen({ navigation }) {
           </TouchableOpacity>
         ))}
       </View>
+      {/* Content type quick filters (centered) */}
+      <View style={styles.chipsRow}>
+        {contentFilters.map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            onPress={() => setContentFilter(f.key)}
+            style={[styles.chip, contentFilter === f.key && styles.chipActive]}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.chipText, contentFilter === f.key && styles.chipTextActive]}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <View style={styles.controls}>
         <TouchableOpacity onPress={() => setViewMode(viewMode === "media" ? "compact" : "media")} style={styles.iconBtn}>
           <Ionicons name={viewMode === "media" ? "list-outline" : "images-outline"} size={18} color={colors.textMuted} />
@@ -395,25 +433,46 @@ export default function FeedScreen({ navigation }) {
     </View>
   );
 
+  // Split feed into Events and Builds sections for easier scanning
+  const events = feedData.filter((i) => i.type === "event");
+  const builds = feedData.filter((i) => i.type === "build");
+
+  // Apply content filter to which sections are shown (no collapses)
+  let sections = [];
+  if (contentFilter === "all" || contentFilter === "events") {
+    sections.push({ title: "Events", data: events, fullData: events });
+  }
+  if (contentFilter === "all" || contentFilter === "builds") {
+    sections.push({ title: "Builds", data: builds, fullData: builds });
+  }
+
   return (
     <View style={styles.container}>
-      <FlatList
-        data={feedData}
+      <SectionList
+        sections={sections}
         ListHeaderComponent={Header}
-        stickyHeaderIndices={[0]}
+        renderSectionHeader={({ section }) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <Text style={styles.sectionCount}>{section.fullData?.length ?? section.data.length}</Text>
+          </View>
+        )}
         renderItem={({ item }) => <PostCard item={item} />}
-  keyExtractor={(item) => `${item.type}:${item.id}`}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+        keyExtractor={(item) => `${item.type}:${item.id}`}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
+        stickySectionHeadersEnabled
         removeClippedSubviews={true}
-        initialNumToRender={6}
-        maxToRenderPerBatch={8}
-        windowSize={7}
+  initialNumToRender={6}
+  maxToRenderPerBatch={10}
+        windowSize={9}
         updateCellsBatchingPeriod={50}
+        ListEmptyComponent={
+          <View style={{ paddingTop: 40, alignItems: "center" }}>
+            <Text style={{ color: colors.textMuted }}>No posts yet</Text>
+          </View>
+        }
       />
       <Modal visible={!!commentFor} transparent animationType="slide" onRequestClose={() => setCommentFor(null)}>
         <View style={styles.commentOverlay}>
@@ -461,6 +520,20 @@ export default function FeedScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.accent,
+    backgroundColor: colors.background,
+    marginTop: 10,
+    borderRadius: 8,
+  },
+  sectionTitle: { color: colors.textPrimary, fontWeight: "800" },
+  sectionCount: { color: colors.textMuted, fontWeight: "700", fontSize: 12 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
     flexDirection: "row",
@@ -496,6 +569,24 @@ const styles = StyleSheet.create({
   segActive: { backgroundColor: colors.red },
   segText: { color: colors.textMuted, fontWeight: "700" },
   segTextActive: { color: "#fff" },
+  chipsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+    alignSelf: "center",
+    justifyContent: "center",
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: colors.inputBackground,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  chipActive: { backgroundColor: colors.red, borderColor: colors.red },
+  chipText: { color: colors.textMuted, fontWeight: "700", fontSize: 12 },
+  chipTextActive: { color: "#fff" },
   controls: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginTop: 8 },
   iconBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: 8, paddingVertical: 6, borderRadius: 8 },
   sortLabel: { color: colors.textMuted, fontSize: 12, marginLeft: 4 },

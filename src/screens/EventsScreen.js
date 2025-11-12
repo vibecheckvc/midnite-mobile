@@ -22,7 +22,7 @@ import CreateEventModal from "./CreateEventModal";
 
 const { width } = Dimensions.get("window");
 
-export default function EventsScreen() {
+export default function EventsScreen({ route }) {
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("Upcoming");
@@ -44,6 +44,19 @@ export default function EventsScreen() {
     }).start();
     loadEvents();
   }, []);
+
+  // If navigated with an eventId param from another screen, open that event's details once events are loaded
+  useEffect(() => {
+    if (!events.length) return;
+    const targetId = route?.params?.eventId;
+    if (targetId) {
+      const found = events.find((e) => e.id === targetId);
+      if (found) {
+        setSelectedEvent(found);
+        setShowEventDetails(true);
+      }
+    }
+  }, [events, route?.params?.eventId]);
 
   useEffect(() => {
     // Update filtered events when events or filter changes

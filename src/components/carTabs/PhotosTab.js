@@ -37,6 +37,15 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
   const screenWidth = Dimensions.get("window").width;
   const viewerRef = React.useRef(null);
 
+  const isOwner = user?.id && car?.user_id === user.id;
+  const guard = () => {
+    if (!isOwner) {
+      Alert.alert("Read Only", "You can only modify photos for your own car.");
+      return false;
+    }
+    return true;
+  };
+
   const load = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -78,6 +87,7 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
 
   // Handles both image pick & upload via helper
   const handleUpload = async () => {
+    if (!guard()) return;
     try {
       const photoUrl = await pickAndUploadPhoto(supabase, car.id);
       if (!photoUrl) return;
@@ -91,6 +101,7 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
   };
 
   const confirmUpload = async () => {
+    if (!guard()) return;
     if (!pendingUri) return setShowCaption(false);
 
     try {
@@ -133,8 +144,9 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
   };
 
   // Delete photo and DB record via helpers
-  const remove = (row) =>
-    Alert.alert("Delete photo", "Remove this photo permanently?", [
+  const remove = (row) => {
+    if (!guard()) return;
+    return Alert.alert("Delete photo", "Remove this photo permanently?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -145,6 +157,7 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
         },
       },
     ]);
+  };
 
   const Item = ({ item, index }) => (
     <TouchableOpacity
@@ -161,9 +174,11 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
           {item.caption}
         </Text>
       )}
-      <TouchableOpacity onPress={() => remove(item)} style={styles.del}>
-        <Ionicons name="trash-outline" size={18} color="#fff" />
-      </TouchableOpacity>
+      {isOwner && (
+        <TouchableOpacity onPress={() => remove(item)} style={styles.del}>
+          <Ionicons name="trash-outline" size={18} color="#fff" />
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 
@@ -186,12 +201,14 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
           <RefreshControl tintColor={RED} refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListHeaderComponent={
-          <View style={{ paddingHorizontal: 16 }}>
-            <TouchableOpacity onPress={handleUpload} style={styles.primary}>
-              <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
-              <Text style={styles.primaryTxt}>Upload Photo</Text>
-            </TouchableOpacity>
-          </View>
+          isOwner ? (
+            <View style={{ paddingHorizontal: 16 }}>
+              <TouchableOpacity onPress={handleUpload} style={styles.primary}>
+                <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
+                <Text style={styles.primaryTxt}>Upload Photo</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null
         }
       />
 
@@ -249,7 +266,7 @@ export default function PhotosTab({ car, user, supabase, onReload }) {
       </Modal>
 
       <Modal
-        visible={showCaption}
+        visible={showCaption && isOwner}
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setShowCaption(false)}

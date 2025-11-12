@@ -66,19 +66,32 @@ export default function TasksTab({ car, user, supabase, onReload }) {
     setRefreshing(false);
   };
 
+  const isOwner = user?.id && car?.user_id === user.id;
+
+  const guard = () => {
+    if (!isOwner) {
+      Alert.alert("Read Only", "You can only modify tasks for your own car.");
+      return false;
+    }
+    return true;
+  };
+
   const openAdd = () => {
+    if (!guard()) return;
     setEditing(null);
     setTitle("");
     setShow(true);
   };
 
   const openEdit = (r) => {
+    if (!guard()) return;
     setEditing(r);
     setTitle(r.title || "");
     setShow(true);
   };
 
   const save = async () => {
+    if (!guard()) return;
     if (!title.trim()) return Alert.alert("Missing", "Task title required.");
 
     const basePayload = { car_id: car.id, title: title.trim() };
@@ -110,6 +123,7 @@ export default function TasksTab({ car, user, supabase, onReload }) {
   };
 
   const toggle = async (r) => {
+    if (!guard()) return;
     const updated = !r.completed;
     setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, completed: updated } : x)));
     try {
@@ -122,7 +136,9 @@ export default function TasksTab({ car, user, supabase, onReload }) {
   };
 
   // Delete with helper
-  const del = (id) =>
+  const del = (id) => {
+    if (!guard()) return;
+    return (
     Alert.alert("Delete task?", "This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       {
@@ -133,17 +149,25 @@ export default function TasksTab({ car, user, supabase, onReload }) {
           onReload?.();
         },
       },
-    ]);
+    ])
+    );
+  };
 
   const Item = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => toggle(item)}
-          style={[styles.checkbox, item.completed && styles.checkboxOn]}
-        >
-          {item.completed && <Ionicons name="checkmark" size={14} color="#fff" />}
-        </TouchableOpacity>
+        {isOwner ? (
+          <TouchableOpacity
+            onPress={() => toggle(item)}
+            style={[styles.checkbox, item.completed && styles.checkboxOn]}
+          >
+            {item.completed && <Ionicons name="checkmark" size={14} color="#fff" />}
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.checkbox, item.completed && styles.checkboxOn]}>
+            {item.completed && <Ionicons name="checkmark" size={14} color="#fff" />}
+          </View>
+        )}
         <Text
           style={[
             styles.title,
@@ -153,12 +177,16 @@ export default function TasksTab({ car, user, supabase, onReload }) {
         >
           {item.title}
         </Text>
-        <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
-          <Ionicons name="create-outline" size={18} color={TEXT} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => del(item.id)} style={styles.iconBtnDanger}>
-          <Ionicons name="trash-outline" size={18} color="#fff" />
-        </TouchableOpacity>
+        {isOwner && (
+          <>
+            <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
+              <Ionicons name="create-outline" size={18} color={TEXT} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => del(item.id)} style={styles.iconBtnDanger}>
+              <Ionicons name="trash-outline" size={18} color="#fff" />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );
@@ -180,15 +208,17 @@ export default function TasksTab({ car, user, supabase, onReload }) {
           <RefreshControl tintColor={RED} refreshing={refreshing} onRefresh={onRefresh} />
         }
       />
-      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-        <TouchableOpacity onPress={openAdd} style={styles.primary}>
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text style={styles.primaryTxt}>Add Task</Text>
-        </TouchableOpacity>
-      </View>
+      {isOwner && (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+          <TouchableOpacity onPress={openAdd} style={styles.primary}>
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={styles.primaryTxt}>Add Task</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Modal
-        visible={show}
+        visible={show && isOwner}
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setShow(false)}

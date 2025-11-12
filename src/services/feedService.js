@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
  * Fetch unified feed: builds + events (For You or Following)
  * Includes persistent likes/saves from DB and fixed profile mapping.
  */
-export async function fetchUnifiedFeed(userId, filter = "For You") {
+export async function fetchUnifiedFeed(userId, filter = "For You", contentFilter = "all") {
   try {
     // 1️⃣ Get following list
     const { data: followingRows, error: followErr } = await supabase
@@ -16,26 +16,51 @@ export async function fetchUnifiedFeed(userId, filter = "For You") {
     if (followErr) throw followErr;
     const followingIds = followingRows?.map((r) => r.following_id) || [];
 
-    // 2️⃣ Fetch public cars (builds)
-    const { data: carsRaw, error: carsErr } = await supabase
-      .from("cars")
-      .select(
-        "id, user_id, make, model, year, trim, cover_url, created_at, is_public"
-      )
-      .eq("is_public", true)
-      .order("created_at", { ascending: false });
+    // 2️⃣/3️⃣ Fetch datasets based on contentFilter for faster loads
+    let carsRaw = [];
+    let eventsRaw = [];
 
-    if (carsErr) throw carsErr;
+    // Build list of dataset queries to run in parallel for faster response
+    const datasetPromises = [];
+    if (contentFilter === "all" || contentFilter === "builds") {
+      datasetPromises.push(
+        supabase
+          .from("cars")
+          .select(
+            "id, user_id, make, model, year, trim, cover_url, created_at, is_public"
+          )
+          .eq("is_public", true)
+          .order("created_at", { ascending: false })
+          .limit(40) // cap initial builds to reduce payload
+      );
+    }
+    if (contentFilter === "all" || contentFilter === "events") {
+      datasetPromises.push(
+        supabase
+          .from("events")
+          .select(
+            "id, user_id, title, description, location, date, image_url, created_at"
+          )
+          .order("created_at", { ascending: false })
+          .limit(40)
+      );
+    }
 
-    // 3️⃣ Fetch events
-    const { data: eventsRaw, error: eventsErr } = await supabase
-      .from("events")
-      .select(
-        "id, user_id, title, description, location, date, image_url, created_at"
-      )
-      .order("created_at", { ascending: false });
-
-    if (eventsErr) throw eventsErr;
+    if (datasetPromises.length) {
+      const results = await Promise.all(datasetPromises);
+      // Assign based on order we pushed promises
+      let buildIndex = 0;
+      if (contentFilter === "all" || contentFilter === "builds") {
+        const { data, error } = results[buildIndex++];
+        if (error) throw error;
+        carsRaw = data || [];
+      }
+      if (contentFilter === "all" || contentFilter === "events") {
+        const { data, error } = results[buildIndex];
+        if (error) throw error;
+        eventsRaw = data || [];
+      }
+    }
 
     // 4️⃣ Collect all user IDs for profile lookup
     const allUserIds = [

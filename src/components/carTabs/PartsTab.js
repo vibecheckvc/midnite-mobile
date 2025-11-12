@@ -67,13 +67,25 @@ export default function PartsTab({ car, user, supabase, onReload }) {
     setRefreshing(false);
   };
 
+  const isOwner = user?.id && car?.user_id === user.id;
+
+  const guard = () => {
+    if (!isOwner) {
+      Alert.alert("Read Only", "You can only modify parts for your own car.");
+      return false;
+    }
+    return true;
+  };
+
   const openAdd = () => {
+    if (!guard()) return;
     setEditing(null);
     setF({ name: "", category: "", cost: "" });
     setShow(true);
   };
 
   const openEdit = (r) => {
+    if (!guard()) return;
     setEditing(r);
     setF({
       name: r.name || "",
@@ -84,6 +96,7 @@ export default function PartsTab({ car, user, supabase, onReload }) {
   };
 
   const save = async () => {
+    if (!guard()) return;
     if (!f.name.trim()) return Alert.alert("Missing", "Part name required.");
 
     const basePayload = {
@@ -116,6 +129,7 @@ export default function PartsTab({ car, user, supabase, onReload }) {
   };
 
   const toggleInstalled = async (r) => {
+    if (!guard()) return;
     const newInstalled = !r.installed;
     setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, installed: newInstalled } : x)));
     try {
@@ -128,7 +142,9 @@ export default function PartsTab({ car, user, supabase, onReload }) {
   };
 
   // Delete via helper
-  const del = (id) =>
+  const del = (id) => {
+    if (!guard()) return;
+    return (
     Alert.alert("Delete part?", "This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       {
@@ -139,25 +155,31 @@ export default function PartsTab({ car, user, supabase, onReload }) {
           onReload?.();
         },
       },
-    ]);
+    ])
+    );
+  };
 
   const Item = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{item.name}</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <TouchableOpacity
-            onPress={() => toggleInstalled(item)}
-            style={[styles.chip, item.installed && styles.chipOn]}
-          >
-            <Text style={styles.chipTxt}>{item.installed ? "Installed" : "Install"}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
-            <Ionicons name="create-outline" size={18} color={TEXT} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => del(item.id)} style={styles.iconBtnDanger}>
-            <Ionicons name="trash-outline" size={18} color="#fff" />
-          </TouchableOpacity>
+          {isOwner && (
+            <>
+              <TouchableOpacity
+                onPress={() => toggleInstalled(item)}
+                style={[styles.chip, item.installed && styles.chipOn]}
+              >
+                <Text style={styles.chipTxt}>{item.installed ? "Installed" : "Install"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
+                <Ionicons name="create-outline" size={18} color={TEXT} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => del(item.id)} style={styles.iconBtnDanger}>
+                <Ionicons name="trash-outline" size={18} color="#fff" />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
       <Text style={styles.meta}>
@@ -183,15 +205,17 @@ export default function PartsTab({ car, user, supabase, onReload }) {
           <RefreshControl tintColor={RED} refreshing={refreshing} onRefresh={onRefresh} />
         }
       />
-      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-        <TouchableOpacity onPress={openAdd} style={styles.primary}>
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text style={styles.primaryTxt}>Add Part</Text>
-        </TouchableOpacity>
-      </View>
+      {isOwner && (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+          <TouchableOpacity onPress={openAdd} style={styles.primary}>
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={styles.primaryTxt}>Add Part</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Modal
-        visible={show}
+        visible={show && isOwner}
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setShow(false)}

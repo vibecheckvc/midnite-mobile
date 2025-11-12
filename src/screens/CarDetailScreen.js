@@ -191,6 +191,8 @@ export default function CarDetailScreen({ route, navigation }) {
         </ScrollView>
       </View>
 
+      {/* (Removed explicit read-only banner per UX) */}
+
       {/* Content */}
       <View style={styles.contentArea}>
         <View style={styles.contentCard}>
@@ -314,4 +316,5 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     padding: 14,
   },
+  
 });

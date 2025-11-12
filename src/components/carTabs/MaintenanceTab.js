@@ -77,7 +77,18 @@ export default function MaintenanceTab({ car, user, supabase, onReload }) {
     setRefreshing(false);
   };
 
+  const isOwner = user?.id && car?.user_id === user.id;
+
+  const guard = () => {
+    if (!isOwner) {
+      Alert.alert("Read Only", "You can only modify maintenance for your own car.");
+      return false;
+    }
+    return true;
+  };
+
   const openAdd = () => {
+    if (!guard()) return;
     setEditing(null);
     setF({
       type: "",
@@ -91,6 +102,7 @@ export default function MaintenanceTab({ car, user, supabase, onReload }) {
   };
 
   const openEdit = (r) => {
+    if (!guard()) return;
     setEditing(r);
     setF({
       type: r.type || "",
@@ -105,6 +117,7 @@ export default function MaintenanceTab({ car, user, supabase, onReload }) {
 
   // Add or update maintenance record
   const save = async () => {
+    if (!guard()) return;
     if (!f.type.trim()) return Alert.alert("Missing", "Maintenance type required.");
 
     const basePayload = {
@@ -141,6 +154,7 @@ export default function MaintenanceTab({ car, user, supabase, onReload }) {
 
   // Mark maintenance as done now
   const markDoneNow = async (r) => {
+    if (!guard()) return;
     const payload = {
       last_done_miles: r.current_miles ?? car?.mileage ?? 0,
       last_done_date: toLocalISODate(new Date()),
@@ -156,7 +170,9 @@ export default function MaintenanceTab({ car, user, supabase, onReload }) {
   };
 
   // Delete maintenance entry using helper
-  const del = (id) =>
+  const del = (id) => {
+    if (!guard()) return;
+    return (
     Alert.alert("Delete entry?", "This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       {
@@ -167,7 +183,9 @@ export default function MaintenanceTab({ car, user, supabase, onReload }) {
           onReload?.();
         },
       },
-    ]);
+    ])
+    );
+  };
 
   const Item = ({ item }) => {
     const dueByMiles = (item.last_done_miles ?? 0) + (item.interval_miles ?? 0);
@@ -180,12 +198,16 @@ export default function MaintenanceTab({ car, user, supabase, onReload }) {
         <View style={styles.header}>
           <Text style={styles.title}>{item.type}</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <TouchableOpacity onPress={() => openEdit(item)} style={styles.chip}>
-              <Ionicons name="create-outline" size={16} color={TEXT} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => del(item.id)} style={styles.chipDanger}>
-              <Ionicons name="trash-outline" size={16} color="#fff" />
-            </TouchableOpacity>
+            {isOwner && (
+              <>
+                <TouchableOpacity onPress={() => openEdit(item)} style={styles.chip}>
+                  <Ionicons name="create-outline" size={16} color={TEXT} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => del(item.id)} style={styles.chipDanger}>
+                  <Ionicons name="trash-outline" size={16} color="#fff" />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
         <Text style={styles.meta}>
@@ -219,12 +241,14 @@ export default function MaintenanceTab({ car, user, supabase, onReload }) {
               : `${Math.abs(milesLeft).toLocaleString()} mi OVERDUE`
             : "—"}
         </Text>
-        <View style={{ marginTop: 10 }}>
-          <TouchableOpacity onPress={() => markDoneNow(item)} style={styles.primarySm}>
-            <Ionicons name="checkmark-done-outline" size={18} color="#fff" />
-            <Text style={styles.primaryTxt}>Mark Done Now</Text>
-          </TouchableOpacity>
-        </View>
+        {isOwner && (
+          <View style={{ marginTop: 10 }}>
+            <TouchableOpacity onPress={() => markDoneNow(item)} style={styles.primarySm}>
+              <Ionicons name="checkmark-done-outline" size={18} color="#fff" />
+              <Text style={styles.primaryTxt}>Mark Done Now</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
@@ -247,15 +271,17 @@ export default function MaintenanceTab({ car, user, supabase, onReload }) {
         }
       />
 
-      <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-        <TouchableOpacity onPress={openAdd} style={styles.primary}>
-          <Ionicons name="add" size={18} color="#fff" />
-          <Text style={styles.primaryTxt}>Add Maintenance</Text>
-        </TouchableOpacity>
-      </View>
+      {isOwner && (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+          <TouchableOpacity onPress={openAdd} style={styles.primary}>
+            <Ionicons name="add" size={18} color="#fff" />
+            <Text style={styles.primaryTxt}>Add Maintenance</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Modal
-        visible={show}
+        visible={show && isOwner}
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setShow(false)}
