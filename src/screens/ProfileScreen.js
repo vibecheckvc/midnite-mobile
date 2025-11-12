@@ -17,6 +17,7 @@ import {
   Dimensions,
   RefreshControl,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -41,6 +42,7 @@ const GREEN = "#00c97e";
 
 export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useAuth();
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState(null);
   const [cars, setCars] = useState([]);
   const [followers, setFollowers] = useState(0);
@@ -321,28 +323,74 @@ export default function ProfileScreen({ navigation }) {
 
       {/* Edit Modal */}
       <Modal visible={editVisible} animationType="slide" onRequestClose={() => setEditVisible(false)}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalContainer}
-        >
-          <Text style={styles.modalTitle}>Edit Profile</Text>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalCard}>
-            <TextInput style={styles.input} placeholder="Full Name" placeholderTextColor="#777" value={fullName} onChangeText={setFullName} />
-            <TextInput style={[styles.input, styles.bioInput]} placeholder="Bio" placeholderTextColor="#777" value={bio} onChangeText={setBio} multiline />
-            <TextInput style={styles.input} placeholder="Instagram" placeholderTextColor="#777" value={instagram} onChangeText={setInstagram} />
-            <TextInput style={styles.input} placeholder="TikTok" placeholderTextColor="#777" value={tiktok} onChangeText={setTiktok} />
-            <TextInput style={styles.input} placeholder="YouTube" placeholderTextColor="#777" value={youtube} onChangeText={setYoutube} />
-            <TextInput style={styles.input} placeholder="Website" placeholderTextColor="#777" value={website} onChangeText={setWebsite} />
-          </ScrollView>
-          <View style={styles.modalButtons}>
-            <TouchableOpacity onPress={() => setEditVisible(false)} style={styles.cancelBtn}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSaveProfile} style={styles.saveBtn}>
-              <Text style={styles.saveText}>{loading ? "Saving..." : "Save"}</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
+        <SafeAreaView style={styles.modalSafeArea} edges={["top", "bottom"]}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalContainer}
+            keyboardVerticalOffset={0}
+          >
+            <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top, 16) }]}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+            </View>
+            <ScrollView 
+              showsVerticalScrollIndicator={false} 
+              contentContainerStyle={styles.modalCard}
+              keyboardShouldPersistTaps="handled"
+            >
+              <TextInput 
+                style={styles.input} 
+                placeholder="Full Name" 
+                placeholderTextColor="#777" 
+                value={fullName} 
+                onChangeText={setFullName} 
+              />
+              <TextInput 
+                style={[styles.input, styles.bioInput]} 
+                placeholder="Bio" 
+                placeholderTextColor="#777" 
+                value={bio} 
+                onChangeText={setBio} 
+                multiline 
+              />
+              <TextInput 
+                style={styles.input} 
+                placeholder="Instagram" 
+                placeholderTextColor="#777" 
+                value={instagram} 
+                onChangeText={setInstagram} 
+              />
+              <TextInput 
+                style={styles.input} 
+                placeholder="TikTok" 
+                placeholderTextColor="#777" 
+                value={tiktok} 
+                onChangeText={setTiktok} 
+              />
+              <TextInput 
+                style={styles.input} 
+                placeholder="YouTube" 
+                placeholderTextColor="#777" 
+                value={youtube} 
+                onChangeText={setYoutube} 
+              />
+              <TextInput 
+                style={styles.input} 
+                placeholder="Website" 
+                placeholderTextColor="#777" 
+                value={website} 
+                onChangeText={setWebsite} 
+              />
+            </ScrollView>
+            <View style={[styles.modalButtons, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+              <TouchableOpacity onPress={() => setEditVisible(false)} style={styles.cancelBtn}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveProfile} style={styles.saveBtn}>
+                <Text style={styles.saveText}>{loading ? "Saving..." : "Save"}</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
       </Modal>
 
     </LinearGradient>
@@ -438,14 +486,71 @@ const styles = StyleSheet.create({
   socialRow: { flexDirection: "row", justifyContent: "center", gap: 22, width: "100%", marginBottom: 30 },
   signOutButton: { marginTop: 8 },
   signOutText: { color: MUTED, fontSize: 13, fontWeight: "600" },
-  modalContainer: { flex: 1, backgroundColor: BG, padding: 16 },
-  modalTitle: { color: TEXT, fontSize: 20, fontWeight: "800", marginBottom: 10, textAlign: "center" },
-  modalCard: { paddingHorizontal: 8, paddingBottom: 8 },
-  input: { backgroundColor: GLASS_STRONG, color: TEXT, borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: BORDER, fontSize: 14 },
-  bioInput: { height: 90, textAlignVertical: "top" },
-  modalButtons: { flexDirection: "row", justifyContent: "flex-end", marginTop: 6 },
-  cancelBtn: { padding: 12 },
-  cancelText: { color: MUTED, fontWeight: "600" },
-  saveBtn: { backgroundColor: RED, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 10, marginRight: 4 },
-  saveText: { color: TEXT, fontWeight: "800" },
+  modalSafeArea: { flex: 1, backgroundColor: BG },
+  modalContainer: { flex: 1, backgroundColor: BG },
+  modalHeader: { 
+    paddingHorizontal: 20, 
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  modalTitle: { 
+    color: TEXT, 
+    fontSize: 24, 
+    fontWeight: "800", 
+    textAlign: "center",
+    letterSpacing: -0.5,
+  },
+  modalCard: { 
+    paddingHorizontal: 20, 
+    paddingTop: 24,
+    paddingBottom: 24,
+  },
+  input: { 
+    backgroundColor: GLASS_STRONG, 
+    color: TEXT, 
+    borderRadius: 12, 
+    padding: 16, 
+    marginBottom: 16, 
+    borderWidth: 1, 
+    borderColor: BORDER, 
+    fontSize: 16,
+    minHeight: 50,
+  },
+  bioInput: { 
+    height: 100, 
+    textAlignVertical: "top",
+    paddingTop: 16,
+  },
+  modalButtons: { 
+    flexDirection: "row", 
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+  },
+  cancelBtn: { 
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  cancelText: { 
+    color: MUTED, 
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  saveBtn: { 
+    backgroundColor: RED, 
+    paddingVertical: 14, 
+    paddingHorizontal: 32, 
+    borderRadius: 12,
+    minWidth: 100,
+    alignItems: "center",
+  },
+  saveText: { 
+    color: TEXT, 
+    fontWeight: "800",
+    fontSize: 16,
+  },
 });
